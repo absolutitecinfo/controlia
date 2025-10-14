@@ -22,7 +22,7 @@ const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Agentes", url: "/dashboard/colaborador", icon: MessageSquare },
   { title: "Configurações", url: "/dashboard/admin", icon: Settings },
-  { title: "Analytics", url: "/dashboard/master", icon: BarChart3 },
+  { title: "Administração", url: "/dashboard/master", icon: BarChart3 },
 ];
 
 export function AppSidebar() {

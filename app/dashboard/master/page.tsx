@@ -68,9 +68,9 @@ export default function Master() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Dashboard Master</h1>
+        <h1 className="text-3xl font-bold">Administração da Plataforma</h1>
         <p className="text-muted-foreground mt-2">
-          Visão geral da plataforma completa
+          Visão geral e controle total da plataforma ControlIA
         </p>
       </div>
 
