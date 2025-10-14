@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Chat IA", url: "/dashboard/colaborador", icon: MessageSquare },
+  { title: "Agentes", url: "/dashboard/colaborador", icon: MessageSquare },
   { title: "Configurações", url: "/dashboard/admin", icon: Settings },
   { title: "Analytics", url: "/dashboard/master", icon: BarChart3 },
 ];
@@ -97,7 +97,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Chat History - só aparece na tela de Chat IA */}
+        {/* Chat History - só aparece na tela de Agentes */}
         {isChatPage && (
           <SidebarGroup className="flex-1">
             <div className="flex items-center justify-between px-2 py-1">

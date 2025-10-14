@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Send, Bot, User, Loader2, Brain, Code, FileText, Zap } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 interface Message {
@@ -13,13 +14,63 @@ interface Message {
   id: string;
 }
 
+interface Agent {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType<any>;
+  color: string;
+  isPopular: boolean;
+}
+
 export default function Colaborador() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [hasStartedConversation, setHasStartedConversation] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<string>("");
+  const [showAgentSelector, setShowAgentSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Lista de agentes disponíveis
+  const agents: Agent[] = [
+    {
+      id: "assistant",
+      name: "Assistente Geral",
+      description: "Ajuda com tarefas gerais e perguntas diversas",
+      icon: Brain,
+      color: "text-primary",
+      isPopular: true
+    },
+    {
+      id: "developer",
+      name: "Desenvolvedor",
+      description: "Especialista em programação e desenvolvimento",
+      icon: Code,
+      color: "text-blue-500",
+      isPopular: true
+    },
+    {
+      id: "writer",
+      name: "Escritor",
+      description: "Ajuda com redação e criação de conteúdo",
+      icon: FileText,
+      color: "text-green-500",
+      isPopular: true
+    },
+    {
+      id: "analyst",
+      name: "Analista",
+      description: "Análise de dados e relatórios",
+      icon: Zap,
+      color: "text-purple-500",
+      isPopular: false
+    }
+  ];
+
+  // Agentes populares (para botões de acesso rápido)
+  const popularAgents = agents.filter(agent => agent.isPopular);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -31,6 +82,12 @@ export default function Colaborador() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
+
+    // Verifica se um agente foi selecionado
+    if (!selectedAgent && !hasStartedConversation) {
+      alert("Por favor, selecione um agente antes de iniciar a conversa.");
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -50,15 +107,22 @@ export default function Colaborador() {
 
     // Simular resposta da IA
     setTimeout(() => {
+      const selectedAgentData = agents.find(agent => agent.id === selectedAgent);
+      const agentName = selectedAgentData?.name || "Assistente";
+      
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Esta é uma resposta simulada da IA. Integre com sua API de IA preferida (OpenAI, Claude, etc.) para funcionalidade completa. O sistema está preparado para receber respostas em tempo real.",
+        content: `Olá! Sou o ${agentName}. Como posso ajudá-lo hoje? Esta é uma resposta simulada da IA. Integre com sua API de IA preferida (OpenAI, Claude, etc.) para funcionalidade completa. O sistema está preparado para receber respostas em tempo real.`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, assistantMessage]);
       setIsLoading(false);
     }, 1500);
+  };
+
+  const handleAgentSelect = (agentId: string) => {
+    setSelectedAgent(agentId);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -74,9 +138,9 @@ export default function Colaborador() {
       <div className="flex flex-col h-[calc(100vh-8rem)]">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Chat com IA</h1>
+          <h1 className="text-3xl font-bold">Agentes IA</h1>
           <p className="text-muted-foreground mt-2">
-            Converse com seu assistente inteligente
+            Escolha um agente especializado para sua conversa
           </p>
         </div>
 
@@ -91,6 +155,33 @@ export default function Colaborador() {
               <p className="text-muted-foreground text-lg">
                 ControlIA para sua Empresa
               </p>
+            </div>
+
+            {/* Agent Selection - Popular Agents Quick Access */}
+            <div className="space-y-6 mb-8">
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium text-center">Agentes Populares</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {popularAgents.map((agent) => {
+                    const IconComponent = agent.icon;
+                    return (
+                      <Button
+                        key={agent.id}
+                        variant={selectedAgent === agent.id ? "default" : "outline"}
+                        className={`h-auto p-4 flex flex-col items-center gap-2 transition-smooth ${
+                          selectedAgent === agent.id 
+                            ? "bg-primary text-primary-foreground shadow-glow-primary" 
+                            : "hover:border-primary hover:bg-primary/10 hover:text-foreground"
+                        }`}
+                        onClick={() => handleAgentSelect(agent.id)}
+                      >
+                        <IconComponent className={`h-6 w-6 transition-colors ${selectedAgent === agent.id ? "text-primary-foreground" : agent.color}`} />
+                        <div className="font-medium text-sm">{agent.name}</div>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* Input Field */}
@@ -120,18 +211,69 @@ export default function Colaborador() {
                 </Button>
               </div>
               
-              {/* Tools Section */}
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center gap-2 text-muted-foreground">
+              {/* Tools Section with Agent Selector */}
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowAgentSelector(!showAgentSelector)}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-smooth"
+                >
                   <div className="h-4 w-4 rounded border border-border flex items-center justify-center">
-                    <span className="text-xs">+</span>
+                    <span className="text-xs">{showAgentSelector ? "−" : "+"}</span>
                   </div>
-                  <span className="text-sm">Ferramentas</span>
-                </div>
-                <div className="text-xs text-muted-foreground text-right">
-                  Suas conversas com ControlIA não são usadas para aprimorar nossos modelos.<br />
-                  O ControlIA pode cometer erros. Por isso, é bom checar as respostas.
-                </div>
+                  <span className="text-sm">Escolha um Agente</span>
+                </button>
+
+                {/* Agent Selector Panel */}
+                {showAgentSelector && (
+                  <div className="mt-3 p-4 rounded-lg border border-border bg-muted/30 space-y-3">
+                    <h4 className="text-sm font-medium">Selecione um Agente</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {agents.map((agent) => {
+                        const IconComponent = agent.icon;
+                        return (
+                          <Button
+                            key={agent.id}
+                            variant={selectedAgent === agent.id ? "default" : "outline"}
+                            className={`h-auto p-3 flex items-center gap-2 justify-start transition-smooth ${
+                              selectedAgent === agent.id 
+                                ? "bg-primary text-primary-foreground shadow-glow-primary" 
+                                : "hover:border-primary hover:bg-primary/10 hover:text-foreground"
+                            }`}
+                            onClick={() => {
+                              handleAgentSelect(agent.id);
+                              setShowAgentSelector(false);
+                            }}
+                          >
+                            <IconComponent className={`h-4 w-4 transition-colors ${selectedAgent === agent.id ? "text-primary-foreground" : agent.color}`} />
+                            <div className="font-medium text-sm">{agent.name}</div>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Selected Agent Info */}
+                {selectedAgent && (
+                  <div className="mt-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                    <div className="flex items-center gap-3">
+                      {(() => {
+                        const agent = agents.find(a => a.id === selectedAgent);
+                        if (!agent) return null;
+                        const IconComponent = agent.icon;
+                        return (
+                          <>
+                            <IconComponent className={`h-5 w-5 ${agent.color}`} />
+                            <div>
+                              <div className="font-medium text-sm">{agent.name}</div>
+                              <div className="text-xs text-muted-foreground">{agent.description}</div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -145,10 +287,24 @@ export default function Colaborador() {
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Chat com IA</h1>
-        <p className="text-muted-foreground mt-2">
-          Converse com seu assistente inteligente
-        </p>
+        <div className="flex items-center gap-3">
+          {(() => {
+            const agent = agents.find(a => a.id === selectedAgent);
+            if (!agent) return null;
+            const IconComponent = agent.icon;
+            return (
+              <>
+                <IconComponent className={`h-8 w-8 ${agent.color}`} />
+                <div>
+                  <h1 className="text-3xl font-bold">{agent.name}</h1>
+                  <p className="text-muted-foreground mt-1">
+                    {agent.description}
+                  </p>
+                </div>
+              </>
+            );
+          })()}
+        </div>
       </div>
 
       {/* Chat Container */}

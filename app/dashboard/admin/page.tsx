@@ -7,17 +7,64 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Key, Settings as SettingsIcon } from "lucide-react";
+import { Save, Key, Settings as SettingsIcon, Users } from "lucide-react";
 import { useState } from "react";
 
 export default function Admin() {
   const [apiKey, setApiKey] = useState("");
   const [aiRules, setAiRules] = useState("");
   const [enableByok, setEnableByok] = useState(false);
+  
+  // Estados para gerenciamento de usuários
+  const [users, setUsers] = useState([
+    {
+      id: 1,
+      name: "João Silva",
+      email: "joao@empresa.com",
+      role: "Admin",
+      status: "Ativo",
+      lastAccess: "2024-01-15",
+      avatar: "JS"
+    },
+    {
+      id: 2,
+      name: "Maria Santos",
+      email: "maria@empresa.com",
+      role: "Colaborador",
+      status: "Ativo",
+      lastAccess: "2024-01-14",
+      avatar: "MS"
+    },
+    {
+      id: 3,
+      name: "Pedro Costa",
+      email: "pedro@empresa.com",
+      role: "Colaborador",
+      status: "Inativo",
+      lastAccess: "2024-01-10",
+      avatar: "PC"
+    }
+  ]);
 
   const handleSave = () => {
     // TODO: Implement save logic
     console.log("Settings saved");
+  };
+
+  const handleUserStatusToggle = (userId: number) => {
+    setUsers(users.map(user => 
+      user.id === userId 
+        ? { ...user, status: user.status === "Ativo" ? "Inativo" : "Ativo" }
+        : user
+    ));
+  };
+
+  const handleUserRoleChange = (userId: number, newRole: string) => {
+    setUsers(users.map(user => 
+      user.id === userId 
+        ? { ...user, role: newRole }
+        : user
+    ));
   };
 
   return (
@@ -38,6 +85,10 @@ export default function Admin() {
           <TabsTrigger value="ai" className="data-[state=active]:text-primary">
             <SettingsIcon className="mr-2 h-4 w-4" />
             Configurações IA
+          </TabsTrigger>
+          <TabsTrigger value="users" className="data-[state=active]:text-primary">
+            <Users className="mr-2 h-4 w-4" />
+            Usuários
           </TabsTrigger>
         </TabsList>
 
@@ -154,6 +205,112 @@ export default function Admin() {
                     </p>
                   </div>
                   <Switch defaultChecked />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="users" className="space-y-6">
+          <Card className="border-border hover:border-primary transition-smooth card-hover-glow">
+            <CardHeader>
+              <CardTitle>Gerenciamento de Usuários</CardTitle>
+              <CardDescription>
+                Administre os usuários do seu plano e suas permissões
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Estatísticas dos usuários */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Total de Usuários</p>
+                  <p className="text-2xl font-bold mt-1">{users.length}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Usuários Ativos</p>
+                  <p className="text-2xl font-bold mt-1 text-primary">
+                    {users.filter(u => u.status === "Ativo").length}
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Administradores</p>
+                  <p className="text-2xl font-bold mt-1">
+                    {users.filter(u => u.role === "Admin").length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Lista de usuários */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Lista de Usuários</h4>
+                <div className="space-y-3">
+                  {users.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 transition-smooth"
+                    >
+                      <div className="flex items-center gap-4">
+                        {/* Avatar */}
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-medium">
+                          {user.avatar}
+                        </div>
+                        
+                        {/* Informações do usuário */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{user.name}</p>
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              user.status === "Ativo" 
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                            }`}>
+                              {user.status}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Último acesso: {user.lastAccess}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Controles */}
+                      <div className="flex items-center gap-3">
+                        {/* Seletor de Role */}
+                        <select
+                          value={user.role}
+                          onChange={(e) => handleUserRoleChange(user.id, e.target.value)}
+                          className="px-3 py-1 text-sm border border-border rounded-md bg-background focus:ring-2 focus:ring-primary/20 transition-smooth"
+                        >
+                          <option value="Admin">Admin</option>
+                          <option value="Colaborador">Colaborador</option>
+                          <option value="Visualizador">Visualizador</option>
+                        </select>
+
+                        {/* Toggle de Status */}
+                        <Switch
+                          checked={user.status === "Ativo"}
+                          onCheckedChange={() => handleUserStatusToggle(user.id)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ações em lote */}
+              <div className="pt-4 border-t border-border">
+                <h4 className="font-medium mb-4">Ações em Lote</h4>
+                <div className="flex gap-3">
+                  <Button variant="outline" size="sm">
+                    Convidar Usuário
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    Exportar Lista
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    Configurar Permissões
+                  </Button>
                 </div>
               </div>
             </CardContent>
