@@ -4,39 +4,39 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar: hsl(var(--sidebar));
+  --color-chart-5: hsl(var(--chart-5));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-1: hsl(var(--chart-1));
+  --color-ring: hsl(var(--ring));
+  --color-input: hsl(var(--input));
+  --color-border: hsl(var(--border));
+  --color-destructive: hsl(var(--destructive));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card: hsl(var(--card));
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -44,72 +44,229 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  /* Paleta de Cores Principal - PRD */
+  --color-primary-hex: #00FFC3;
+  --color-secondary-hex: #F5B300;
+  --color-background-hex: #0E0E0E;
+  
+  /* Design System Variables - HSL Format (Lovable/shadcn) */
+  --background: 0 0% 5.5%;
+  --foreground: 0 0% 100%;
+
+  --card: 0 0% 8%;
+  --card-foreground: 0 0% 100%;
+
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 100%;
+
+  --primary: 166 100% 50%; /* #00FFC3 - Verde-água vibrante */
+  --primary-foreground: 0 0% 5.5%;
+
+  --secondary: 42 100% 48%; /* #F5B300 - Amarelo/Dourado */
+  --secondary-foreground: 0 0% 5.5%;
+
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 69%;
+
+  --accent: 166 100% 50%;
+  --accent-foreground: 0 0% 5.5%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 0 0% 20%;
+  --input: 0 0% 15%;
+  --ring: 166 100% 50%;
+
+  --radius: 0.75rem; /* Border radius padrão do design Lovable */
+
+  /* Sidebar Variables */
+  --sidebar-background: 0 0% 8%;
+  --sidebar-foreground: 0 0% 90%;
+  --sidebar-primary: 166 100% 50%;
+  --sidebar-primary-foreground: 0 0% 5.5%;
+  --sidebar-accent: 0 0% 12%;
+  --sidebar-accent-foreground: 0 0% 90%;
+  --sidebar-border: 0 0% 15%;
+  --sidebar-ring: 166 100% 50%;
+
+  /* Chart Colors */
+  --chart-1: 166 100% 50%;
+  --chart-2: 42 100% 48%;
+  --chart-3: 200 70% 60%;
+  --chart-4: 120 60% 70%;
+  --chart-5: 300 50% 65%;
+
+  /* Custom tokens for ControlIA.io */
+  --hero-gradient: linear-gradient(135deg, hsl(166 100% 50%), hsl(220 100% 65%));
+  --glow-primary: 0 0 40px hsl(166 100% 50% / 0.3);
+  --glow-secondary: 0 0 30px hsl(42 100% 48% / 0.3);
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Additional Custom Variables */
+  --card-border-active: hsl(166 100% 50% / 0.5);
+  --card-shadow-hover: 0 4px 20px hsl(166 100% 50% / 0.15);
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Dark mode - mantém a mesma paleta (design já é dark) */
+  --background: 0 0% 5.5%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 8%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 166 100% 50%;
+  --primary-foreground: 0 0% 5.5%;
+  --secondary: 42 100% 48%;
+  --secondary-foreground: 0 0% 5.5%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 69%;
+  --accent: 166 100% 50%;
+  --accent-foreground: 0 0% 5.5%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 20%;
+  --input: 0 0% 15%;
+  --ring: 166 100% 50%;
+  --sidebar-background: 0 0% 8%;
+  --sidebar-foreground: 0 0% 90%;
+  --sidebar-primary: 166 100% 50%;
+  --sidebar-primary-foreground: 0 0% 5.5%;
+  --sidebar-accent: 0 0% 12%;
+  --sidebar-accent-foreground: 0 0% 90%;
+  --sidebar-border: 0 0% 15%;
+  --sidebar-ring: 166 100% 50%;
+}
+
+@layer utilities {
+  /* Custom utilities para ControlIA.io - Lovable Design */
+  
+  /* Gradient Hero */
+  .bg-hero-gradient {
+    background: var(--hero-gradient);
+  }
+  
+  /* Glow Effects */
+  .shadow-glow-primary {
+    box-shadow: var(--glow-primary);
+  }
+  
+  .shadow-glow-secondary {
+    box-shadow: var(--glow-secondary);
+  }
+  
+  /* Transitions */
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  /* Card Hover Effects */
+  .card-hover-glow {
+    transition: var(--transition-smooth);
+  }
+  
+  .card-hover-glow:hover {
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--card-border-active);
+  }
+  
+  /* Text Gradients */
+  .text-gradient-primary {
+    background: var(--hero-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .text-hero-gradient {
+    background: var(--hero-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  
+  /* Button Glow */
+  .btn-glow-primary {
+    box-shadow: var(--glow-primary);
+  }
+  
+  .btn-glow-primary:hover {
+    box-shadow: 0 0 60px hsl(166 100% 50% / 0.5);
+  }
+  
+  .btn-glow-secondary {
+    box-shadow: var(--glow-secondary);
+  }
+  
+  .btn-glow-secondary:hover {
+    box-shadow: 0 0 45px hsl(42 100% 48% / 0.5);
+  }
+}
+
+/* Scrollbar customizada para o sidebar - mais sutil */
+@layer utilities {
+  .sidebar-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+  
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:active {
+    background: hsl(var(--muted-foreground) / 0.7);
+  }
+  
+  /* Remove scrollbar do sidebar principal - abordagem mais abrangente */
+  [data-sidebar="sidebar"],
+  [data-sidebar="sidebar"] *,
+  [data-sidebar="content"],
+  [data-sidebar="content"] *,
+  .sidebar,
+  .sidebar * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  [data-sidebar="sidebar"]::-webkit-scrollbar,
+  [data-sidebar="sidebar"] *::-webkit-scrollbar,
+  [data-sidebar="content"]::-webkit-scrollbar,
+  [data-sidebar="content"] *::-webkit-scrollbar,
+  .sidebar::-webkit-scrollbar,
+  .sidebar *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  /* Força remoção em todos os elementos do sidebar */
+  [data-sidebar="sidebar"],
+  [data-sidebar="content"] {
+    overflow: hidden !important;
+  }
+  
+  /* Permite scroll apenas no conteúdo interno quando necessário */
+  [data-sidebar="content"] {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
 }
 
 @layer base {
@@ -117,6 +274,65 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold;
+  }
+  
+  /* Fix sidebar layout - ajusta espaçamento e remove bordas problemáticas */
+  @media (min-width: 768px) {
+    /* Remove borda direita do sidebar quando colapsado - abordagem mais específica */
+    .peer[data-state="collapsed"] [data-sidebar="sidebar"] {
+      border-right: none !important;
+    }
+    
+    /* Remove borda do wrapper do sidebar quando colapsado */
+    .peer[data-state="collapsed"] [class*="group/sidebar-wrapper"] {
+      border-right: none !important;
+    }
+    
+    /* Remove borda de todos os elementos filhos quando colapsado */
+    .peer[data-state="collapsed"] [data-sidebar="sidebar"] * {
+      border-right: none !important;
+    }
+    
+    /* Força remoção da borda em todos os elementos do sidebar colapsado */
+    .peer[data-state="collapsed"] [data-sidebar="sidebar"],
+    .peer[data-state="collapsed"] [data-sidebar="sidebar"] *,
+    .peer[data-state="collapsed"] [data-sidebar="sidebar"]::before,
+    .peer[data-state="collapsed"] [data-sidebar="sidebar"]::after {
+      border-right: 0 !important;
+      border-right-width: 0 !important;
+      border-right-style: none !important;
+    }
+    
+    /* Ajusta espaçamento do conteúdo principal */
+    .peer[data-state="expanded"] ~ main,
+    .peer[data-state="expanded"] ~ div > main {
+      margin-left: 12rem !important; /* Reduzido de 16rem para 12rem */
+      transition: margin-left 200ms ease-linear;
+    }
+    
+    .peer[data-state="collapsed"] ~ main,
+    .peer[data-state="collapsed"] ~ div > main {
+      margin-left: 3rem !important; /* Mantém 3rem para ícones */
+      transition: margin-left 200ms ease-linear;
+    }
+    
+    /* Ajusta largura do sidebar para reduzir espaço */
+    .peer[data-state="expanded"] [data-sidebar="sidebar"] {
+      width: 12rem !important; /* Reduzido de 16rem para 12rem */
+    }
+    
+    .peer[data-state="collapsed"] [data-sidebar="sidebar"] {
+      width: 3rem !important; /* Mantém 3rem para ícones */
+    }
+    
+    /* Melhora alinhamento do botão toggle */
+    .peer[data-state="collapsed"] [data-sidebar="trigger"] {
+      margin-left: 0.5rem !important;
+    }
   }
 }
