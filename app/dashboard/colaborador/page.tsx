@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send, Bot, User, Loader2, Brain, Code, FileText, Zap } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -18,7 +17,7 @@ interface Agent {
   id: string;
   name: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
   isPopular: boolean;
 }

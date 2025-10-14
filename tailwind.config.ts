@@ -12,7 +12,7 @@ import type { Config } from "tailwindcss";
  * usando formato HSL para compatibilidade com Lovable e shadcn/ui
  */
 const config: Config = {
-  darkMode: ["class"],
+  darkMode: "class",
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",

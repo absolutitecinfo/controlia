@@ -118,7 +118,8 @@ export default function Master() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      label={(entry: any) => `${entry.name} ${(entry.percent * 100).toFixed(0)}%`}
                       outerRadius={100}
                       fill="#8884d8"
                       dataKey="value"
