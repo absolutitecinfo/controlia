@@ -5,18 +5,121 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export default function Login() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createClient();
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    const message = searchParams.get('message');
+    if (message === 'check-email') {
+      toast.success("Verifique seu email para confirmar a conta");
+    }
+  }, [searchParams]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication logic
-    router.push("/dashboard");
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.user) {
+        throw new Error("Erro ao fazer login");
+      }
+
+      // Buscar perfil do usuário
+      const { data: profile, error: profileError } = await supabase
+        .from('perfis')
+        .select(`
+          *,
+          empresas (
+            id,
+            nome,
+            status,
+            plano_id,
+            planos (
+              nome,
+              preco_mensal,
+              max_usuarios,
+              max_agentes,
+              limite_mensagens_mes
+            )
+          )
+        `)
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        toast.error("Erro ao carregar perfil do usuário");
+        return;
+      }
+
+      if (!profile) {
+        toast.error("Perfil não encontrado");
+        return;
+      }
+
+      // Verificar se usuário está ativo
+      if (profile.status !== 'ativo') {
+        await supabase.auth.signOut();
+        toast.error("Sua conta está suspensa. Entre em contato com o suporte.");
+        return;
+      }
+
+      // Verificar se empresa está ativa
+      if (profile.empresas?.status !== 'ativo') {
+        await supabase.auth.signOut();
+        toast.error("Sua empresa está suspensa. Entre em contato com o suporte.");
+        return;
+      }
+
+      // Redirecionar baseado no role
+      switch (profile.role) {
+        case 'master':
+          router.push('/dashboard/master');
+          break;
+        case 'admin':
+          router.push('/dashboard/admin');
+          break;
+        case 'user':
+          router.push('/dashboard/colaborador');
+          break;
+        default:
+          router.push('/dashboard');
+      }
+
+      toast.success("Login realizado com sucesso!");
+
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      if (error.message?.includes('Invalid login credentials')) {
+        toast.error("Email ou senha incorretos");
+      } else if (error.message?.includes('Email not confirmed')) {
+        toast.error("Confirme seu email antes de fazer login");
+      } else {
+        toast.error(error.message || "Erro ao fazer login");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,9 +168,10 @@ export default function Login() {
               </div>
               <Button 
                 type="submit" 
+                disabled={loading}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow-primary"
               >
-                Entrar
+                {loading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
             

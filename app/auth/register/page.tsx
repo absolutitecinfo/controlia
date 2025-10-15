@@ -7,9 +7,13 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export default function Register() {
   const router = useRouter();
+  const supabase = createClient();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -18,10 +22,105 @@ export default function Register() {
     confirmPassword: ""
   });
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement registration logic
-    router.push("/dashboard");
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // 1. Criar usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
+          }
+        }
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      if (!authData.user) {
+        throw new Error("Erro ao criar usuário");
+      }
+
+      // Em desenvolvimento, confirmar email automaticamente
+      if (process.env.NODE_ENV === 'development') {
+        const { error: confirmError } = await supabase.auth.admin.updateUserById(
+          authData.user.id,
+          { email_confirm: true }
+        );
+        
+        if (confirmError) {
+          console.warn('Erro ao confirmar email automaticamente:', confirmError);
+        }
+      }
+
+      // 2. Buscar o plano Free
+      const { data: planoFree, error: planoError } = await supabase
+        .from('planos')
+        .select('id')
+        .eq('nome', 'Free')
+        .single();
+
+      if (planoError || !planoFree) {
+        throw new Error("Erro ao buscar plano Free");
+      }
+
+      // 3. Criar empresa
+      const { data: empresa, error: empresaError } = await supabase
+        .from('empresas')
+        .insert({
+          nome: formData.company,
+          email: formData.email,
+          plano_id: planoFree.id,
+          status: 'ativo',
+          data_adesao: new Date().toISOString().split('T')[0],
+        })
+        .select()
+        .single();
+
+      if (empresaError) {
+        throw empresaError;
+      }
+
+      // 4. Atualizar perfil do usuário
+      const { error: perfilError } = await supabase
+        .from('perfis')
+        .update({
+          nome_completo: formData.name,
+          empresa_id: empresa.id,
+          role: 'admin',
+          status: 'ativo',
+        })
+        .eq('id', authData.user.id);
+
+      if (perfilError) {
+        throw perfilError;
+      }
+
+      toast.success("Conta criada com sucesso! Verifique seu email para confirmar.");
+      router.push("/auth/login?message=check-email");
+
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      toast.error(error.message || "Erro ao criar conta");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -106,9 +205,10 @@ export default function Register() {
               </div>
               <Button 
                 type="submit" 
+                disabled={loading}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow-primary"
               >
-                Criar Conta
+                {loading ? "Criando conta..." : "Criar Conta"}
               </Button>
             </form>
             
