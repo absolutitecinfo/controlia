@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MessageSquare, Settings, BarChart3, Plus, Trash2 } from "lucide-react";
+import { Home, MessageSquare, Settings, BarChart3, Plus, Trash2, Bot } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -20,7 +20,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Agentes", url: "/dashboard/colaborador", icon: MessageSquare },
+  { title: "Chats", url: "/dashboard/colaborador", icon: MessageSquare },
+  { title: "Agentes IA", url: "/dashboard/admin/agentes-ia", icon: Bot },
   { title: "Configurações", url: "/dashboard/admin", icon: Settings },
   { title: "Administração", url: "/dashboard/master", icon: BarChart3 },
 ];
