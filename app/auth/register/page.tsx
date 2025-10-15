@@ -12,7 +12,6 @@ import { toast } from "sonner";
 
 export default function Register() {
   const router = useRouter();
-  const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -38,6 +37,7 @@ export default function Register() {
     setLoading(true);
 
     try {
+      const supabase = createClient();
       // 1. Criar usuário no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
