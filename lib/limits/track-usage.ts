@@ -70,7 +70,7 @@ export async function checkMessageLimit(empresaId: number): Promise<{ allowed: b
       .eq('id', empresaId)
       .single();
 
-    const limit = empresa?.planos?.limite_mensagens_mes;
+    const limit = empresa?.planos?.[0]?.limite_mensagens_mes;
 
     if (!limit) {
       return { allowed: true, remaining: -1, limit: null }; // Unlimited
@@ -109,7 +109,7 @@ export async function checkAgentLimit(empresaId: number): Promise<{ allowed: boo
       .eq('id', empresaId)
       .single();
 
-    const limit = empresa?.planos?.max_agentes;
+    const limit = empresa?.planos?.[0]?.max_agentes;
 
     if (!limit) {
       return { allowed: true, remaining: -1, limit: null }; // Unlimited
@@ -147,7 +147,7 @@ export async function checkUserLimit(empresaId: number): Promise<{ allowed: bool
       .eq('id', empresaId)
       .single();
 
-    const limit = empresa?.planos?.max_usuarios;
+    const limit = empresa?.planos?.[0]?.max_usuarios;
 
     if (!limit) {
       return { allowed: true, remaining: -1, limit: null }; // Unlimited

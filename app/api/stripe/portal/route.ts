@@ -1,11 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth/authorization';
+import { NextResponse } from 'next/server';
+import { requireUser } from '@/lib/auth/authorization';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe/server';
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
-    const { profile } = await requireAuth();
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe não configurado' },
+        { status: 503 }
+      );
+    }
+
+    const { profile } = await requireUser();
     const supabase = await createServerSupabaseClient();
 
     // Get empresa details

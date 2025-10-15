@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth/authorization';
+import { requireUser } from '@/lib/auth/authorization';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, profile } = await requireAuth();
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe não configurado' },
+        { status: 503 }
+      );
+    }
+
+    const { user, profile } = await requireUser();
     const supabase = await createServerSupabaseClient();
 
     const body = await req.json();

@@ -3,7 +3,7 @@ import { requireAdmin } from '@/lib/auth/authorization';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { checkAgentLimit } from '@/lib/limits/track-usage';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const { profile } = await requireAdmin();
     const supabase = await createServerSupabaseClient();

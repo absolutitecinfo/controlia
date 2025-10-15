@@ -4,8 +4,16 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 
 export async function POST(req: NextRequest) {
+  if (!stripe) {
+    return NextResponse.json(
+      { error: 'Stripe não configurado' },
+      { status: 503 }
+    );
+  }
+
   const body = await req.text();
-  const signature = headers().get('stripe-signature');
+  const headersList = await headers();
+  const signature = headersList.get('stripe-signature');
 
   if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
     return NextResponse.json(
@@ -70,8 +78,8 @@ export async function POST(req: NextRequest) {
       }
 
       case 'invoice.payment_succeeded': {
-        const invoice = event.data.object;
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+        const invoice = event.data.object as unknown as { subscription: string; period_end: number; id: string; amount_paid: number };
+        const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
         const { empresa_id } = subscription.metadata || {};
 
         if (empresa_id) {
@@ -103,8 +111,8 @@ export async function POST(req: NextRequest) {
       }
 
       case 'invoice.payment_failed': {
-        const invoice = event.data.object;
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+        const invoice = event.data.object as unknown as { subscription: string; id: string; amount_due: number; attempt_count: number };
+        const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
         const { empresa_id } = subscription.metadata || {};
 
         if (empresa_id) {
@@ -158,7 +166,7 @@ export async function POST(req: NextRequest) {
               entidade_id: parseInt(empresa_id),
               detalhes: {
                 subscription_id: subscription.id,
-                canceled_at: new Date(subscription.canceled_at * 1000).toISOString(),
+                canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
               },
             });
         }

@@ -6,7 +6,7 @@ export interface LogActionParams {
   acao: string;
   entidadeTipo: string;
   entidadeId: number;
-  detalhes: any;
+  detalhes: Record<string, unknown>;
   req?: Request;
 }
 
@@ -56,7 +56,7 @@ export async function logEmpresaAction(
   userId: string,
   empresaId: number,
   action: 'created' | 'updated' | 'suspended' | 'banned' | 'reactivated',
-  details: any,
+  details: Record<string, unknown>,
   req?: Request
 ) {
   await logAction({
@@ -75,7 +75,7 @@ export async function logUserAction(
   targetUserId: number,
   empresaId: number,
   action: 'created' | 'updated' | 'suspended' | 'banned' | 'reactivated' | 'deleted',
-  details: any,
+  details: Record<string, unknown>,
   req?: Request
 ) {
   await logAction({
@@ -94,7 +94,7 @@ export async function logAgenteAction(
   agenteId: number,
   empresaId: number,
   action: 'created' | 'updated' | 'deleted' | 'activated' | 'deactivated',
-  details: any,
+  details: Record<string, unknown>,
   req?: Request
 ) {
   await logAction({
@@ -113,7 +113,7 @@ export async function logPlanoAction(
   planoId: number,
   empresaId: number,
   action: 'created' | 'updated' | 'deleted' | 'assigned',
-  details: any,
+  details: Record<string, unknown>,
   req?: Request
 ) {
   await logAction({

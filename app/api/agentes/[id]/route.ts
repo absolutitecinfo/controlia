@@ -4,16 +4,17 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { profile } = await requireAdmin();
     const supabase = await createServerSupabaseClient();
+    const { id } = await params;
 
     const { data: agente, error } = await supabase
       .from('agentes_ia')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('empresa_id', profile.empresa_id)
       .single();
 
@@ -36,11 +37,12 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { profile } = await requireAdmin();
     const supabase = await createServerSupabaseClient();
+    const { id } = await params;
 
     const body = await req.json();
     const { nome, descricao, instrucoes, icone_url, is_active, is_popular, cor } = body;
@@ -65,7 +67,7 @@ export async function PATCH(
         cor: cor || '#3B82F6',
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('empresa_id', profile.empresa_id)
       .select()
       .single();
@@ -89,17 +91,18 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { profile } = await requireAdmin();
     const supabase = await createServerSupabaseClient();
+    const { id } = await params;
 
     // Check if agente exists and belongs to empresa
     const { data: agente, error: fetchError } = await supabase
       .from('agentes_ia')
       .select('id')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('empresa_id', profile.empresa_id)
       .single();
 
@@ -114,7 +117,7 @@ export async function DELETE(
     const { data: conversations } = await supabase
       .from('conversas')
       .select('id')
-      .eq('agente_id', params.id)
+      .eq('agente_id', id)
       .limit(1);
 
     if (conversations && conversations.length > 0) {
@@ -127,7 +130,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('agentes_ia')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('empresa_id', profile.empresa_id);
 
     if (deleteError) {

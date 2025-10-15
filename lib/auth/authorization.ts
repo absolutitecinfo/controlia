@@ -30,7 +30,7 @@ export async function requireRole(allowedRoles: string[]) {
     throw new Error('Usuário suspenso');
   }
   
-  if (profile.empresas?.status !== 'ativo') {
+  if (profile.empresas?.[0]?.status !== 'ativo') {
     throw new Error('Empresa suspensa');
   }
   
@@ -62,7 +62,7 @@ export function createErrorResponse(message: string, status: number = 401) {
 }
 
 // Helper function to validate empresa_id access
-export async function validateEmpresaAccess(empresaId: string, userProfile: any) {
+export async function validateEmpresaAccess(empresaId: string, userProfile: { role: string; empresa_id: number }) {
   // Master can access any empresa
   if (userProfile.role === 'master') {
     return true;

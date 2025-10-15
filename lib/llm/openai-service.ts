@@ -60,7 +60,7 @@ export function detectOpenAIProvider(apiKey: string): boolean {
   return apiKey.startsWith('sk-');
 }
 
-export function getOpenAIModel(apiKey: string): string {
+export function getOpenAIModel(_apiKey: string): string {
   // You can implement logic to detect model based on key or other factors
   // For now, default to gpt-4
   return 'gpt-4';

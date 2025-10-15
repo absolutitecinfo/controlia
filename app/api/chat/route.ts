@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth/authorization';
+import { requireUser } from '@/lib/auth/authorization';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { routeToLLM, validateApiKey } from '@/lib/llm/llm-router';
 import { trackMessageUsage } from '@/lib/limits/track-usage';
@@ -7,7 +7,7 @@ import { trackMessageUsage } from '@/lib/limits/track-usage';
 export async function POST(req: NextRequest) {
   try {
     // 1. Authenticate user
-    const { user, profile } = await requireAuth();
+    const { user, profile } = await requireUser();
     
     // 2. Parse request body
     const body = await req.json();
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     // 3. Get empresa and validate API key
     const { data: empresa } = await supabase
       .from('empresas')
-      .select('chave_api_llm, contexto_ia, status')
+      .select('chave_api_llm, contexto_ia, status, plano_id')
       .eq('id', profile.empresa_id)
       .single();
 

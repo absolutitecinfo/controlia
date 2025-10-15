@@ -115,9 +115,10 @@ export default function Register() {
       toast.success("Conta criada com sucesso! Verifique seu email para confirmar.");
       router.push("/auth/login?message=check-email");
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
-      toast.error(error.message || "Erro ao criar conta");
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(errorMessage || "Erro ao criar conta");
     } finally {
       setLoading(false);
     }

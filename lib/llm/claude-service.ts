@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 export interface ClaudeMessage {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
@@ -23,7 +23,7 @@ export async function sendToClaude(
   try {
     // Convert messages to Claude format
     const systemMessage = messages.find(m => m.role === 'system');
-    const conversationMessages = messages.filter(m => m.role !== 'system');
+    const conversationMessages = messages.filter(m => m.role !== 'system') as { role: 'user' | 'assistant'; content: string }[];
 
     const response = await anthropic.messages.create({
       model,
@@ -41,7 +41,7 @@ export async function sendToClaude(
         try {
           for await (const chunk of response) {
             if (chunk.type === 'content_block_delta') {
-              const content = chunk.delta.text;
+              const content = (chunk.delta as { text?: string }).text;
               if (content) {
                 controller.enqueue(encoder.encode(content));
               }
@@ -65,7 +65,7 @@ export function detectClaudeProvider(apiKey: string): boolean {
   return apiKey.startsWith('sk-ant-');
 }
 
-export function getClaudeModel(apiKey: string): string {
+export function getClaudeModel(_apiKey: string): string {
   // You can implement logic to detect model based on key or other factors
   // For now, default to claude-3-sonnet
   return 'claude-3-sonnet-20240229';

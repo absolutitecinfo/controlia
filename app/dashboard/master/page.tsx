@@ -9,10 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { 
   Building2, 
-  Users, 
   TrendingUp, 
   DollarSign, 
-  Activity, 
   AlertTriangle,
   Ban,
   CheckCircle,
@@ -25,14 +23,7 @@ import {
   Eye,
   UserCheck,
   UserX,
-  CreditCard,
-  Calendar,
-  Mail,
-  Phone,
-  MapPin,
-  Crown,
-  Star,
-  Shield
+  CreditCard
 } from "lucide-react";
 import {
   Dialog,
@@ -40,7 +31,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -208,8 +198,8 @@ const stats = {
 
 export default function Master() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [planFilter, setPlanFilter] = useState<string>("all");
+  const [statusFilter] = useState<string>("all");
+  const [planFilter] = useState<string>("all");
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
   const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);

@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
-export default function Login() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -107,15 +107,17 @@ export default function Login() {
 
       toast.success("Login realizado com sucesso!");
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
       
-      if (error.message?.includes('Invalid login credentials')) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      
+      if (errorMessage.includes('Invalid login credentials')) {
         toast.error("Email ou senha incorretos");
-      } else if (error.message?.includes('Email not confirmed')) {
+      } else if (errorMessage.includes('Email not confirmed')) {
         toast.error("Confirme seu email antes de fazer login");
       } else {
-        toast.error(error.message || "Erro ao fazer login");
+        toast.error(errorMessage || "Erro ao fazer login");
       }
     } finally {
       setLoading(false);
@@ -185,6 +187,14 @@ export default function Login() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
 

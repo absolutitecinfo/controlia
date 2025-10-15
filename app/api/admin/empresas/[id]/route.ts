@@ -4,11 +4,12 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireMaster();
     const supabase = await createServerSupabaseClient();
+    const { id } = await params;
 
     const { data: empresa, error } = await supabase
       .from('empresas')
@@ -22,7 +23,7 @@ export async function GET(
           limite_mensagens_mes
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (error || !empresa) {
@@ -44,11 +45,12 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await requireMaster();
     const supabase = await createServerSupabaseClient();
+    const { id } = await params;
 
     const body = await req.json();
     const { nome, email, telefone, endereco, plano_id, status, chave_api_llm, contexto_ia } = body;
@@ -57,7 +59,7 @@ export async function PATCH(
     const { data: existingEmpresa } = await supabase
       .from('empresas')
       .select('id, nome, email')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!existingEmpresa) {
@@ -73,7 +75,7 @@ export async function PATCH(
         .from('empresas')
         .select('id')
         .eq('email', email)
-        .neq('id', params.id)
+        .neq('id', id)
         .single();
 
       if (emailExists) {
@@ -85,7 +87,7 @@ export async function PATCH(
     }
 
     // Prepare update data
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (nome !== undefined) updateData.nome = nome;
     if (email !== undefined) updateData.email = email;
     if (telefone !== undefined) updateData.telefone = telefone;
@@ -100,7 +102,7 @@ export async function PATCH(
     const { data: empresa, error } = await supabase
       .from('empresas')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -117,10 +119,10 @@ export async function PATCH(
       .from('auditoria')
       .insert({
         user_id: user.id,
-        empresa_id: parseInt(params.id),
+        empresa_id: parseInt(id),
         acao: 'empresa_updated',
         entidade_tipo: 'empresa',
-        entidade_id: parseInt(params.id),
+        entidade_id: parseInt(id),
         detalhes: {
           changes: updateData,
           previous: existingEmpresa,
@@ -139,17 +141,18 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await requireMaster();
     const supabase = await createServerSupabaseClient();
+    const { id } = await params;
 
     // Check if empresa exists
     const { data: empresa } = await supabase
       .from('empresas')
       .select('id, nome, email')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!empresa) {
@@ -163,7 +166,7 @@ export async function DELETE(
     const { data: users } = await supabase
       .from('perfis')
       .select('id')
-      .eq('empresa_id', params.id)
+      .eq('empresa_id', id)
       .limit(1);
 
     if (users && users.length > 0) {
@@ -177,7 +180,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('empresas')
       .delete()
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (error) {
       console.error('Error deleting empresa:', error);
@@ -192,10 +195,10 @@ export async function DELETE(
       .from('auditoria')
       .insert({
         user_id: user.id,
-        empresa_id: parseInt(params.id),
+        empresa_id: parseInt(id),
         acao: 'empresa_deleted',
         entidade_tipo: 'empresa',
-        entidade_id: parseInt(params.id),
+        entidade_id: parseInt(id),
         detalhes: {
           nome: empresa.nome,
           email: empresa.email,
