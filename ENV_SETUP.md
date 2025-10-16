@@ -42,3 +42,4 @@ NEXT_PUBLIC_URL=https://seu-dominio.vercel.app
 3. Copie:
    - Secret key → `STRIPE_SECRET_KEY`
    - Webhook secret → `STRIPE_WEBHOOK_SECRET`
+
