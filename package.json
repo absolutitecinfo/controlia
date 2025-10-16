@@ -4,9 +4,19 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:fast": "next dev --turbopack --no-lint",
     "build": "next build --turbopack",
+    "build:fast": "next build --turbopack --no-lint",
+    "build:check": "next build --turbopack --no-lint --no-type-check",
+    "build:prod": "NODE_ENV=production next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "lint:check": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "clean": "rm -rf .next out dist",
+    "clean:all": "rm -rf .next out dist node_modules/.cache"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",

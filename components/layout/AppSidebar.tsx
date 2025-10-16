@@ -80,7 +80,7 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <Link
-                        href={item.url}
+                        href={item.url as any}
                         className={
                           isActive
                             ? "bg-sidebar-accent text-sidebar-primary"

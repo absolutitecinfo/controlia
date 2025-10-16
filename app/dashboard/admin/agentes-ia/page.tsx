@@ -7,88 +7,51 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Bot, Plus, Edit, Trash2, Upload, Image as ImageIcon } from "lucide-react";
+import { Bot, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
-
-interface Agent {
-  id: number;
-  name: string;
-  description: string;
-  instructions: string;
-  iconUrl: string;
-  isActive: boolean;
-  isPopular: boolean;
-  createdAt: string;
-}
+import { useAgentes, type Agent } from "@/hooks/use-agentes";
 
 export default function AgentesIA() {
-  // Estados para gerenciamento de agentes
-  const [agents, setAgents] = useState<Agent[]>([
-    {
-      id: 1,
-      name: "Assistente Geral",
-      description: "Ajuda com tarefas gerais e perguntas diversas",
-      instructions: "Você é um assistente geral prestativo. Ajude o usuário com suas dúvidas de forma clara e objetiva.",
-      iconUrl: "/placeholder.svg",
-      isActive: true,
-      isPopular: true,
-      createdAt: "2024-01-10"
-    },
-    {
-      id: 2,
-      name: "Desenvolvedor",
-      description: "Especialista em programação e desenvolvimento",
-      instructions: "Você é um desenvolvedor expert. Ajude com código, debugging e melhores práticas de programação.",
-      iconUrl: "/placeholder.svg",
-      isActive: true,
-      isPopular: true,
-      createdAt: "2024-01-11"
-    },
-    {
-      id: 3,
-      name: "Escritor",
-      description: "Ajuda com redação e criação de conteúdo",
-      instructions: "Você é um escritor profissional. Ajude com redação, revisão e criação de conteúdo criativo.",
-      iconUrl: "/placeholder.svg",
-      isActive: true,
-      isPopular: true,
-      createdAt: "2024-01-12"
-    }
-  ]);
+  // Hook para gerenciar agentes
+  const { agents, loading, error, createAgent, updateAgent, deleteAgent } = useAgentes();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    instructions: "",
-    iconUrl: "",
-    isActive: true,
-    isPopular: false
+    nome: "",
+    descricao: "",
+    instrucoes: "",
+    icone_url: "",
+    is_active: true,
+    is_popular: false,
+    cor: "#3B82F6"
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Funções para gerenciamento de agentes
   const handleOpenDialog = (agent?: Agent) => {
     if (agent) {
       setEditingAgent(agent);
       setFormData({
-        name: agent.name,
-        description: agent.description,
-        instructions: agent.instructions,
-        iconUrl: agent.iconUrl,
-        isActive: agent.isActive,
-        isPopular: agent.isPopular
+        nome: agent.nome,
+        descricao: agent.descricao,
+        instrucoes: agent.instrucoes,
+        icone_url: agent.icone_url || "",
+        is_active: agent.is_active,
+        is_popular: agent.is_popular,
+        cor: agent.cor || "#3B82F6"
       });
     } else {
       setEditingAgent(null);
       setFormData({
-        name: "",
-        description: "",
-        instructions: "",
-        iconUrl: "",
-        isActive: true,
-        isPopular: false
+        nome: "",
+        descricao: "",
+        instrucoes: "",
+        icone_url: "",
+        is_active: true,
+        is_popular: false,
+        cor: "#3B82F6"
       });
     }
     setIsDialogOpen(true);
@@ -98,333 +61,332 @@ export default function AgentesIA() {
     setIsDialogOpen(false);
     setEditingAgent(null);
     setFormData({
-      name: "",
-      description: "",
-      instructions: "",
-      iconUrl: "",
-      isActive: true,
-      isPopular: false
+      nome: "",
+      descricao: "",
+      instrucoes: "",
+      icone_url: "",
+      is_active: true,
+      is_popular: false,
+      cor: "#3B82F6"
     });
   };
 
-  const handleSaveAgent = () => {
-    if (editingAgent) {
-      // Editar agente existente
-      setAgents(agents.map(agent =>
-        agent.id === editingAgent.id
-          ? { ...agent, ...formData }
-          : agent
-      ));
-    } else {
-      // Criar novo agente
-      const newAgent: Agent = {
-        id: Math.max(...agents.map(a => a.id), 0) + 1,
-        ...formData,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setAgents([...agents, newAgent]);
-    }
-    handleCloseDialog();
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  const handleDeleteAgent = (agentId: number) => {
-    if (confirm("Tem certeza que deseja excluir este agente?")) {
-      setAgents(agents.filter(agent => agent.id !== agentId));
+    try {
+      if (editingAgent) {
+        await updateAgent(editingAgent.id, formData);
+      } else {
+        await createAgent(formData);
+      }
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Erro ao salvar agente:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleAgentStatusToggle = (agentId: number) => {
-    setAgents(agents.map(agent =>
-      agent.id === agentId
-        ? { ...agent, isActive: !agent.isActive }
-        : agent
-    ));
-  };
-
-  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // TODO: Implementar upload real para um servidor
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, iconUrl: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+  const handleDelete = async (id: number) => {
+    if (confirm('Tem certeza que deseja deletar este agente?')) {
+      try {
+        await deleteAgent(id);
+      } catch (error) {
+        console.error('Erro ao deletar agente:', error);
+      }
     }
   };
+
+  const handleToggleStatus = async (agent: Agent) => {
+    try {
+      await updateAgent(agent.id, { is_active: !agent.is_active });
+    } catch (error) {
+      console.error('Erro ao alterar status:', error);
+    }
+  };
+
+  const handleTogglePopular = async (agent: Agent) => {
+    try {
+      await updateAgent(agent.id, { is_popular: !agent.is_popular });
+    } catch (error) {
+      console.error('Erro ao alterar popularidade:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Carregando agentes...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500 mb-4">Erro ao carregar agentes: {error}</p>
+        <Button onClick={() => window.location.reload()}>
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Agentes IA</h1>
-        <p className="text-muted-foreground mt-2">
-          Crie e gerencie agentes personalizados para diferentes necessidades
-        </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Agentes IA</h1>
+          <p className="text-muted-foreground">
+            Gerencie os agentes de inteligência artificial da sua empresa
+          </p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Agente
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {editingAgent ? 'Editar Agente' : 'Criar Novo Agente'}
+              </DialogTitle>
+              <DialogDescription>
+                {editingAgent 
+                  ? 'Atualize as informações do agente' 
+                  : 'Configure um novo agente de IA para sua empresa'
+                }
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="nome">Nome do Agente</Label>
+                  <Input
+                    id="nome"
+                    value={formData.nome}
+                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                    placeholder="Ex: Assistente de Vendas"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cor">Cor do Agente</Label>
+                  <Input
+                    id="cor"
+                    type="color"
+                    value={formData.cor}
+                    onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="descricao">Descrição</Label>
+                <Input
+                  id="descricao"
+                  value={formData.descricao}
+                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                  placeholder="Breve descrição do que o agente faz"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="instrucoes">Instruções do Sistema</Label>
+                <Textarea
+                  id="instrucoes"
+                  value={formData.instrucoes}
+                  onChange={(e) => setFormData({ ...formData, instrucoes: e.target.value })}
+                  placeholder="Instruções detalhadas sobre como o agente deve se comportar..."
+                  rows={4}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="icone_url">URL do Ícone (opcional)</Label>
+                <Input
+                  id="icone_url"
+                  value={formData.icone_url}
+                  onChange={(e) => setFormData({ ...formData, icone_url: e.target.value })}
+                  placeholder="https://exemplo.com/icone.png"
+                />
+              </div>
+
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_active"
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                  />
+                  <Label htmlFor="is_active">Ativo</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_popular"
+                    checked={formData.is_popular}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_popular: checked })}
+                  />
+                  <Label htmlFor="is_popular">Popular</Label>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {editingAgent ? 'Atualizar' : 'Criar'} Agente
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <Card className="border-border hover:border-primary transition-smooth card-hover-glow">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Gerenciamento de Agentes IA</CardTitle>
-              <CardDescription>
-                Crie e gerencie agentes personalizados para diferentes necessidades
-              </CardDescription>
-            </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  onClick={() => handleOpenDialog()}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total de Agentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{agents.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Agentes Ativos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{agents.filter(a => a.is_active).length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Agentes Populares</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{agents.filter(a => a.is_popular).length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Agentes Inativos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{agents.filter(a => !a.is_active).length}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Agents Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {agents.map((agent) => (
+          <Card key={agent.id} className="relative">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  {agent.icone_url ? (
+                    <Image
+                      src={agent.icone_url}
+                      alt={agent.nome}
+                      width={40}
+                      height={40}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                      style={{ backgroundColor: agent.cor }}
+                    >
+                      <Bot className="h-5 w-5" />
+                    </div>
+                  )}
+                  <div>
+                    <CardTitle className="text-lg">{agent.nome}</CardTitle>
+                    <CardDescription className="text-sm">
+                      {agent.descricao}
+                    </CardDescription>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={agent.is_active}
+                    onCheckedChange={() => handleToggleStatus(agent)}
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Status:</span>
+                  <span className={`text-sm font-medium ${
+                    agent.is_active ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {agent.is_active ? 'Ativo' : 'Inativo'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Popular:</span>
+                  <Switch
+                    checked={agent.is_popular}
+                    onCheckedChange={() => handleTogglePopular(agent)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Criado em:</span>
+                  <span className="text-sm">
+                    {new Date(agent.created_at).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleOpenDialog(agent)}
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Agente
+                  <Edit className="h-4 w-4" />
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingAgent ? "Editar Agente" : "Criar Novo Agente"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {editingAgent 
-                      ? "Atualize as informações do agente"
-                      : "Preencha as informações para criar um novo agente IA"
-                    }
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-6 py-4">
-                  {/* Upload de Ícone */}
-                  <div className="space-y-2">
-                    <Label>Ícone do Agente</Label>
-                    <div className="flex items-center gap-4">
-                      <div className="relative h-20 w-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/30">
-                        {formData.iconUrl ? (
-                          <Image
-                            src={formData.iconUrl}
-                            alt="Agent icon"
-                            width={80}
-                            height={80}
-                            className="object-cover"
-                          />
-                        ) : (
-                          <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <Input
-                          id="icon-upload"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleIconUpload}
-                        />
-                        <Label
-                          htmlFor="icon-upload"
-                          className="cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2 px-4 py-2 rounded-md border border-border hover:bg-muted/50 transition-smooth w-fit">
-                            <Upload className="h-4 w-4" />
-                            <span className="text-sm">Upload de Imagem</span>
-                          </div>
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          PNG, JPG ou SVG. Tamanho recomendado: 128x128px
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Nome do Agente */}
-                  <div className="space-y-2">
-                    <Label htmlFor="agent-name">Nome do Agente *</Label>
-                    <Input
-                      id="agent-name"
-                      placeholder="Ex: Analista Financeiro"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="bg-input border-border"
-                    />
-                  </div>
-
-                  {/* Descrição Curta */}
-                  <div className="space-y-2">
-                    <Label htmlFor="agent-desc">Descrição Curta *</Label>
-                    <Input
-                      id="agent-desc"
-                      placeholder="Ex: Especialista em análise financeira e orçamentos"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="bg-input border-border"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Será exibida na seleção de agentes
-                    </p>
-                  </div>
-
-                  {/* Instruções do Sistema */}
-                  <div className="space-y-2">
-                    <Label htmlFor="agent-instructions">Instruções do Sistema *</Label>
-                    <Textarea
-                      id="agent-instructions"
-                      placeholder="Ex: Você é um analista financeiro experiente. Ajude o usuário com análises, projeções e recomendações financeiras. Seja sempre preciso com números e cite fontes quando possível..."
-                      value={formData.instructions}
-                      onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
-                      className="min-h-[150px] bg-input border-border resize-none"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Define o comportamento e personalidade do agente
-                    </p>
-                  </div>
-
-                  {/* Configurações */}
-                  <div className="space-y-4 pt-4 border-t border-border">
-                    <h4 className="font-medium">Configurações</h4>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Agente Ativo</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Disponível para seleção pelos usuários
-                        </p>
-                      </div>
-                      <Switch
-                        checked={formData.isActive}
-                        onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Agente Popular</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Exibir nos botões de acesso rápido
-                        </p>
-                      </div>
-                      <Switch
-                        checked={formData.isPopular}
-                        onCheckedChange={(checked) => setFormData({ ...formData, isPopular: checked })}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Botões de Ação */}
-                  <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                    <Button variant="outline" onClick={handleCloseDialog}>
-                      Cancelar
-                    </Button>
-                    <Button 
-                      onClick={handleSaveAgent}
-                      disabled={!formData.name || !formData.description || !formData.instructions}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                      {editingAgent ? "Atualizar Agente" : "Criar Agente"}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Estatísticas */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Total de Agentes</p>
-              <p className="text-2xl font-bold mt-1">{agents.length}</p>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Agentes Ativos</p>
-              <p className="text-2xl font-bold mt-1 text-primary">
-                {agents.filter(a => a.isActive).length}
-              </p>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Agentes Populares</p>
-              <p className="text-2xl font-bold mt-1">
-                {agents.filter(a => a.isPopular).length}
-              </p>
-            </div>
-          </div>
-
-          {/* Lista de Agentes */}
-          <div className="space-y-4">
-            <h4 className="font-medium">Lista de Agentes</h4>
-            <div className="space-y-3">
-              {agents.map((agent) => (
-                <div
-                  key={agent.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 transition-smooth"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDelete(agent.id)}
+                  className="text-red-600 hover:text-red-700"
                 >
-                  <div className="flex items-center gap-4">
-                    {/* Ícone do Agente */}
-                    <div className="relative h-12 w-12 rounded-lg border border-border overflow-hidden bg-muted/30 flex items-center justify-center">
-                      {agent.iconUrl ? (
-                        <Image
-                          src={agent.iconUrl}
-                          alt={agent.name}
-                          width={48}
-                          height={48}
-                          className="object-cover"
-                        />
-                      ) : (
-                        <Bot className="h-6 w-6 text-muted-foreground" />
-                      )}
-                    </div>
-                    
-                    {/* Informações do Agente */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{agent.name}</p>
-                        {agent.isPopular && (
-                          <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary border border-primary/20">
-                            Popular
-                          </span>
-                        )}
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${
-                          agent.isActive 
-                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                        }`}>
-                          {agent.isActive ? "Ativo" : "Inativo"}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{agent.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Criado em: {agent.createdAt}
-                      </p>
-                    </div>
-                  </div>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-                  {/* Controles */}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpenDialog(agent)}
-                      className="hover:bg-primary/10 hover:text-primary"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteAgent(agent.id)}
-                      className="hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <Switch
-                      checked={agent.isActive}
-                      onCheckedChange={() => handleAgentStatusToggle(agent.id)}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {agents.length === 0 && (
+        <div className="text-center py-12">
+          <Bot className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Nenhum agente criado</h3>
+          <p className="text-muted-foreground mb-4">
+            Crie seu primeiro agente de IA para começar
+          </p>
+          <Button onClick={() => handleOpenDialog()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Criar Primeiro Agente
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

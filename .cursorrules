@@ -1,0 +1,56 @@
+# Regras de Desenvolvimento para Controlia
+
+## Configuração Híbrida
+- Use tipos flexíveis (any quando necessário para desenvolvimento rápido)
+- Evite validações TypeScript muito rígidas em desenvolvimento
+- Prefira warnings ao invés de errors
+- Use type assertions quando necessário
+- Foque na funcionalidade primeiro, tipos depois
+
+## Padrões de Código
+- Use `// eslint-disable-next-line` para ignorar warnings específicos
+- Use `_` para prefixar variáveis não utilizadas (ex: `_unusedVar`)
+- Use type assertions para tipos complexos: `const data = response as unknown as ExpectedType`
+- Prefira funcionalidade sobre perfeição de tipos
+- Use `@ts-ignore` quando necessário para desenvolvimento rápido
+
+## Comandos Úteis
+- `pnpm dev:fast` - Desenvolvimento sem lint (mais rápido)
+- `pnpm build:fast` - Build sem verificação de tipos
+- `pnpm build:check` - Build sem lint e sem type-check
+- `pnpm type-check` - Verificação de tipos separada
+- `pnpm lint:fix` - Fix automático de lint
+- `pnpm build:prod` - Build para produção (com todas as verificações)
+
+## Estratégia de Desenvolvimento
+1. **Funcionalidade primeiro** - código que funciona
+2. **Tipos depois** - refinamento de tipos
+3. **Lint por último** - limpeza final
+
+## Configuração por Ambiente
+- **Desenvolvimento**: Flexível para velocidade
+- **Produção**: Rigoroso para segurança
+- **Staging**: Semi-rigido para testes
+
+## Soluções Rápidas para Erros Comuns
+```typescript
+// Para tipos complexos
+const data = response as unknown as ExpectedType;
+
+// Para variáveis não usadas
+const _unusedVar = value;
+
+// Para any necessário
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const flexibleData: any = response;
+
+// Para ignorar TypeScript
+// @ts-ignore
+const problematicCode = someComplexType;
+```
+
+## Foco do Projeto
+- **Controlia**: Plataforma SaaS Multi-tenant de IA
+- **Stack**: Next.js 15 + Supabase + Stripe + Shadcn UI
+- **Objetivo**: Desenvolvimento rápido e funcional
+- **Prioridade**: Funcionalidade > Tipos > Lint
