@@ -41,6 +41,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Tipos de dados
 interface Company {
@@ -196,7 +197,7 @@ const stats = {
   }
 };
 
-export default function Master() {
+function MasterContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter] = useState<string>("all");
   const [planFilter] = useState<string>("all");
@@ -716,5 +717,13 @@ export default function Master() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function Master() {
+  return (
+    <ProtectedRoute requiredPermissions={['canAccessMaster']}>
+      <MasterContent />
+    </ProtectedRoute>
   );
 }

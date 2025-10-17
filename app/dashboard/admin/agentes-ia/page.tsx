@@ -11,8 +11,9 @@ import { Bot, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
 import { useAgentes, type Agent } from "@/hooks/use-agentes";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
-export default function AgentesIA() {
+function AgentesIAContent() {
   // Hook para gerenciar agentes
   const { agents, loading, error, createAgent, updateAgent, deleteAgent } = useAgentes();
 
@@ -388,5 +389,13 @@ export default function AgentesIA() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AgentesIA() {
+  return (
+    <ProtectedRoute requiredPermissions={['canManageAgents']}>
+      <AgentesIAContent />
+    </ProtectedRoute>
   );
 }

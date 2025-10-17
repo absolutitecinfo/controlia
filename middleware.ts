@@ -10,10 +10,18 @@ export async function middleware(request: NextRequest) {
     '/pricing',
     '/api/stripe/webhook'
   ];
+
+  const protectedApiRoutes = [
+    '/api/auth/me'
+  ];
   
   const isPublicRoute = publicRoutes.some(route => 
     request.nextUrl.pathname === route || 
     request.nextUrl.pathname.startsWith('/api/stripe/webhook')
+  );
+
+  const isProtectedApiRoute = protectedApiRoutes.some(route => 
+    request.nextUrl.pathname === route
   );
 
   // If trying to access protected route without Supabase configured, redirect to login
@@ -79,8 +87,16 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // If not authenticated and trying to access protected route
-  if (!user && !isPublicRoute) {
+  if (!user && !isPublicRoute && !isProtectedApiRoute) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
+  }
+
+  // If not authenticated and trying to access protected API route
+  if (!user && isProtectedApiRoute) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
 
   // If authenticated and trying to access login/register
@@ -164,6 +180,15 @@ export async function middleware(request: NextRequest) {
     }
 
     if (request.nextUrl.pathname.startsWith('/api/agentes/')) {
+      if (!['admin', 'master'].includes(profile?.role || '')) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (request.nextUrl.pathname.startsWith('/api/admin/usuarios')) {
       if (!['admin', 'master'].includes(profile?.role || '')) {
         return NextResponse.json(
           { error: 'Unauthorized' },
