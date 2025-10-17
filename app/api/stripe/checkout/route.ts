@@ -5,10 +5,15 @@ import { stripe } from '@/lib/stripe/server';
 
 export async function POST(request: Request) {
   try {
+    console.log('🔍 Iniciando checkout do Stripe...');
     const { user, profile } = await requireUser();
+    console.log('✅ Usuário autenticado:', { userId: user.id, empresaId: profile.empresa_id });
+    
     const supabase = await createServerSupabaseClient();
+    console.log('✅ Cliente Supabase criado');
 
     const { plano_id } = await request.json();
+    console.log('📋 Plano solicitado:', plano_id);
 
     if (!plano_id) {
       return NextResponse.json(
@@ -18,6 +23,7 @@ export async function POST(request: Request) {
     }
 
     // Buscar informações do plano
+    console.log('🔍 Buscando plano no banco...');
     const { data: plano, error: planoError } = await supabase
       .from('planos')
       .select('*')
@@ -26,13 +32,17 @@ export async function POST(request: Request) {
       .single();
 
     if (planoError || !plano) {
+      console.error('❌ Erro ao buscar plano:', planoError);
       return NextResponse.json(
         { error: 'Plano não encontrado ou inativo' },
         { status: 404 }
       );
     }
+    
+    console.log('✅ Plano encontrado:', { id: plano.id, nome: plano.nome, preco: plano.preco_mensal });
 
     // Buscar informações da empresa
+    console.log('🔍 Buscando empresa no banco...');
     const { data: empresa, error: empresaError } = await supabase
       .from('empresas')
       .select('*')
@@ -40,11 +50,14 @@ export async function POST(request: Request) {
       .single();
 
     if (empresaError || !empresa) {
+      console.error('❌ Erro ao buscar empresa:', empresaError);
       return NextResponse.json(
         { error: 'Empresa não encontrada' },
         { status: 404 }
       );
     }
+    
+    console.log('✅ Empresa encontrada:', { id: empresa.id, nome: empresa.nome });
 
     // Verificar se o plano é gratuito
     if (plano.preco_mensal === 0) {
@@ -73,13 +86,28 @@ export async function POST(request: Request) {
 
     // Verificar se o plano tem preço no Stripe
     if (!plano.stripe_price_id) {
+      console.error('❌ Plano sem stripe_price_id:', plano.id);
       return NextResponse.json(
         { error: 'Plano não está sincronizado com o Stripe' },
         { status: 400 }
       );
     }
+    
+    console.log('✅ Plano tem stripe_price_id:', plano.stripe_price_id);
+
+    // Verificar variáveis de ambiente
+    if (!process.env.NEXT_PUBLIC_APP_URL) {
+      console.error('❌ NEXT_PUBLIC_APP_URL não configurada');
+      return NextResponse.json(
+        { error: 'Configuração do ambiente incompleta' },
+        { status: 500 }
+      );
+    }
+    
+    console.log('✅ NEXT_PUBLIC_APP_URL configurada:', process.env.NEXT_PUBLIC_APP_URL);
 
     // Criar sessão de checkout no Stripe
+    console.log('🔍 Criando sessão de checkout no Stripe...');
     const session = await stripe.checkout.sessions.create({
       customer_email: user.email,
       line_items: [
@@ -104,14 +132,18 @@ export async function POST(request: Request) {
       },
     });
 
+    console.log('✅ Sessão de checkout criada com sucesso:', session.id);
     return NextResponse.json({
       session_id: session.id,
       url: session.url,
     });
   } catch (error) {
-    console.error('Stripe checkout error:', error);
+    console.error('❌ Erro no checkout do Stripe:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
+      { 
+        error: error instanceof Error ? error.message : 'Erro interno do servidor',
+        details: error instanceof Error ? error.stack : 'Sem detalhes'
+      },
       { status: 500 }
     );
   }
