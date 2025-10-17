@@ -93,23 +93,11 @@ export default function ProfilePage() {
     );
   }
 
-  // Debug: Log das permissões
-  console.log('Permissions debug:', {
-    loading: permissions.loading,
-    userName: permissions.userName,
-    userEmail: permissions.userEmail,
-    role: permissions.role,
-    empresaName: permissions.empresaName
-  });
-
   if (!permissions.userName || !permissions.userEmail) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-destructive">Erro ao carregar perfil</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Debug: userName={permissions.userName || 'null'}, userEmail={permissions.userEmail || 'null'}
-          </p>
         </div>
       </div>
     );

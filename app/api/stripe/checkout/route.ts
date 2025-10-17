@@ -1,52 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth/authorization';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe/server';
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    if (!stripe) {
-      return NextResponse.json(
-        { error: 'Stripe não configurado' },
-        { status: 503 }
-      );
-    }
-
     const { user, profile } = await requireUser();
     const supabase = await createServerSupabaseClient();
 
-    const body = await req.json();
-    const { planoId } = body;
+    const { plano_id } = await request.json();
 
-    if (!planoId) {
+    if (!plano_id) {
       return NextResponse.json(
         { error: 'ID do plano é obrigatório' },
         { status: 400 }
       );
     }
 
-    // Get plano details
+    // Buscar informações do plano
     const { data: plano, error: planoError } = await supabase
       .from('planos')
       .select('*')
-      .eq('id', planoId)
+      .eq('id', plano_id)
+      .eq('is_active', true)
       .single();
 
     if (planoError || !plano) {
       return NextResponse.json(
-        { error: 'Plano não encontrado' },
+        { error: 'Plano não encontrado ou inativo' },
         { status: 404 }
       );
     }
 
-    if (!plano.stripe_price_id) {
-      return NextResponse.json(
-        { error: 'Plano não configurado no Stripe' },
-        { status: 400 }
-      );
-    }
-
-    // Get empresa details
+    // Buscar informações da empresa
     const { data: empresa, error: empresaError } = await supabase
       .from('empresas')
       .select('*')
@@ -60,59 +46,72 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let customerId = empresa.stripe_customer_id;
-
-    // Create or get Stripe customer
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: empresa.email,
-        name: empresa.nome,
-        metadata: {
-          empresa_id: empresa.id.toString(),
-          user_id: user.id,
-        },
-      });
-
-      customerId = customer.id;
-
-      // Update empresa with customer ID
-      await supabase
+    // Verificar se o plano é gratuito
+    if (plano.preco_mensal === 0) {
+      // Atualizar empresa para o plano gratuito
+      const { error: updateError } = await supabase
         .from('empresas')
-        .update({ stripe_customer_id: customerId })
+        .update({
+          plano_id: plano.id,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', empresa.id);
+
+      if (updateError) {
+        return NextResponse.json(
+          { error: 'Erro ao atualizar plano' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Plano gratuito ativado com sucesso!',
+        redirect_url: '/dashboard/subscription',
+      });
     }
 
-    // Create checkout session
+    // Verificar se o plano tem preço no Stripe
+    if (!plano.stripe_price_id) {
+      return NextResponse.json(
+        { error: 'Plano não está sincronizado com o Stripe' },
+        { status: 400 }
+      );
+    }
+
+    // Criar sessão de checkout no Stripe
     const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      payment_method_types: ['card'],
+      customer_email: user.email,
       line_items: [
         {
           price: plano.stripe_price_id,
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL}/pricing?canceled=true`,
+      mode: 'subscription',
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription?canceled=true`,
       metadata: {
-        empresa_id: empresa.id.toString(),
-        plano_id: planoId.toString(),
+        empresa_id: empresa.id,
+        plano_id: plano.id,
         user_id: user.id,
       },
       subscription_data: {
         metadata: {
-          empresa_id: empresa.id.toString(),
-          plano_id: planoId.toString(),
+          empresa_id: empresa.id,
+          plano_id: plano.id,
         },
       },
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({
+      session_id: session.id,
+      url: session.url,
+    });
   } catch (error) {
     console.error('Stripe checkout error:', error);
     return NextResponse.json(
-      { error: 'Erro ao criar sessão de checkout' },
+      { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
       { status: 500 }
     );
   }

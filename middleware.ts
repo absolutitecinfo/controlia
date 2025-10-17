@@ -12,7 +12,16 @@ export async function middleware(request: NextRequest) {
   ];
 
   const protectedApiRoutes = [
-    '/api/auth/me'
+    '/api/auth/me',
+    '/api/master',
+    '/api/admin/usuarios',
+    '/api/stripe/sync-plans',
+    '/api/stripe/checkout',
+    '/api/stripe/portal',
+    '/api/stripe/products',
+    '/api/stripe/clear-ids',
+    '/api/test-auth',
+    '/api/test-user'
   ];
   
   const isPublicRoute = publicRoutes.some(route => 
@@ -20,13 +29,16 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/api/stripe/webhook')
   );
 
+  // API routes that don't need authentication
+  const isPublicApiRoute = request.nextUrl.pathname.startsWith('/api/test-');
+
   const isProtectedApiRoute = protectedApiRoutes.some(route => 
     request.nextUrl.pathname === route
   );
 
   // If trying to access protected route without Supabase configured, redirect to login
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    if (!isPublicRoute) {
+    if (!isPublicRoute && !isPublicApiRoute) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
     return NextResponse.next();
@@ -87,7 +99,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // If not authenticated and trying to access protected route
-  if (!user && !isPublicRoute && !isProtectedApiRoute) {
+  if (!user && !isPublicRoute && !isPublicApiRoute && !isProtectedApiRoute) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
@@ -192,6 +204,28 @@ export async function middleware(request: NextRequest) {
       if (!['admin', 'master'].includes(profile?.role || '')) {
         return NextResponse.json(
           { error: 'Unauthorized' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Master-only API routes
+    if (request.nextUrl.pathname.startsWith('/api/master/')) {
+      if (profile?.role !== 'master') {
+        return NextResponse.json(
+          { error: 'Unauthorized - Master access required' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Stripe API routes - require master role
+    if (request.nextUrl.pathname.startsWith('/api/stripe/sync-plans') || 
+        request.nextUrl.pathname.startsWith('/api/stripe/checkout') ||
+        request.nextUrl.pathname.startsWith('/api/stripe/portal')) {
+      if (profile?.role !== 'master') {
+        return NextResponse.json(
+          { error: 'Unauthorized - Master access required' },
           { status: 403 }
         );
       }

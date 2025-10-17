@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEmpresa } from "@/hooks/use-empresa";
+import { useStripeBilling } from "@/hooks/use-stripe-billing";
 
 interface Plano {
   id: string;
@@ -40,6 +41,7 @@ interface UsageStats {
 
 export default function SubscriptionPage() {
   const { config, planos, loading } = useEmpresa();
+  const { loading: billingLoading, createCheckoutSession, openBillingPortal } = useStripeBilling();
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -68,12 +70,9 @@ export default function SubscriptionPage() {
 
   const handleUpgrade = async (planoId: string) => {
     try {
-      // Aqui você integraria com o Stripe para upgrade
-      toast.info('Redirecionando para upgrade...');
-      // window.location.href = `/api/stripe/checkout?plano=${planoId}`;
+      await createCheckoutSession(planoId);
     } catch (error) {
       console.error('Erro ao fazer upgrade:', error);
-      toast.error('Erro ao processar upgrade');
     }
   };
 

@@ -30,21 +30,14 @@ export function usePermissions() {
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
-        console.log('usePermissions: Iniciando busca...');
-        
         // Buscar informações do usuário
         const response = await fetch('/api/auth/me');
-        console.log('usePermissions: Resposta da API:', response.status);
         
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('usePermissions: Erro na resposta:', errorText);
           throw new Error('Erro ao buscar permissões');
         }
         
         const userData = await response.json();
-        console.log('usePermissions: Dados recebidos:', userData);
-        
         const role = userData.role;
         const empresaName = userData.empresaName;
 
@@ -62,10 +55,9 @@ export function usePermissions() {
           loading: false
         };
 
-        console.log('usePermissions: Permissões definidas:', userPermissions);
         setPermissions(userPermissions);
       } catch (error) {
-        console.error('usePermissions: Erro ao buscar permissões:', error);
+        console.error('Erro ao buscar permissões:', error);
         setPermissions(prev => ({ ...prev, loading: false }));
       }
     };

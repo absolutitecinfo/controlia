@@ -1,206 +1,137 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { headers } from 'next/headers';
+import { stripe } from '@/lib/stripe/server';
+import Stripe from 'stripe';
 
-export async function POST(req: NextRequest) {
-  if (!stripe) {
-    return NextResponse.json(
-      { error: 'Stripe não configurado' },
-      { status: 503 }
-    );
-  }
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-  const body = await req.text();
-  const headersList = await headers();
-  const signature = headersList.get('stripe-signature');
-
-  if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return NextResponse.json(
-      { error: 'Webhook signature missing' },
-      { status: 400 }
-    );
-  }
-
-  let event;
-
+export async function POST(request: NextRequest) {
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err);
-    return NextResponse.json(
-      { error: 'Invalid signature' },
-      { status: 400 }
-    );
-  }
+    const body = await request.text();
+    const signature = request.headers.get('stripe-signature')!;
 
-  const supabase = await createServerSupabaseClient();
+    let event: Stripe.Event;
 
-  try {
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err.message);
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+    }
+
+    const supabase = await createServerSupabaseClient();
+
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object;
-        const { empresa_id, plano_id } = session.metadata || {};
-
-        if (empresa_id && plano_id) {
-          // Update empresa with subscription
+        const session = event.data.object as Stripe.Checkout.Session;
+        
+        if (session.mode === 'subscription') {
+          const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+          
+          // Atualizar empresa com informações da assinatura
           await supabase
             .from('empresas')
             .update({
-              stripe_subscription_id: session.subscription as string,
-              plano_id: parseInt(plano_id),
-              status: 'ativo',
-              proxima_cobranca: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+              stripe_customer_id: session.customer as string,
+              stripe_subscription_id: subscription.id,
+              plano_id: session.metadata?.plano_id,
+              updated_at: new Date().toISOString(),
             })
-            .eq('id', empresa_id);
-
-          // Log action
-          await supabase
-            .from('auditoria')
-            .insert({
-              empresa_id: parseInt(empresa_id),
-              user_id: session.metadata?.user_id,
-              acao: 'checkout_completed',
-              entidade_tipo: 'empresa',
-              entidade_id: parseInt(empresa_id),
-              detalhes: {
-                plano_id: parseInt(plano_id),
-                session_id: session.id,
-                subscription_id: session.subscription,
-              },
-            });
-        }
-        break;
-      }
-
-      case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as unknown as { subscription: string; period_end: number; id: string; amount_paid: number };
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-        const { empresa_id } = subscription.metadata || {};
-
-        if (empresa_id) {
-          // Update next billing date
-          await supabase
-            .from('empresas')
-            .update({
-              proxima_cobranca: new Date(invoice.period_end * 1000).toISOString().split('T')[0],
-              status: 'ativo',
-            })
-            .eq('stripe_subscription_id', subscription.id);
-
-          // Log action
-          await supabase
-            .from('auditoria')
-            .insert({
-              empresa_id: parseInt(empresa_id),
-              acao: 'payment_succeeded',
-              entidade_tipo: 'empresa',
-              entidade_id: parseInt(empresa_id),
-              detalhes: {
-                invoice_id: invoice.id,
-                amount_paid: invoice.amount_paid,
-                next_billing: new Date(invoice.period_end * 1000).toISOString().split('T')[0],
-              },
-            });
-        }
-        break;
-      }
-
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object as unknown as { subscription: string; id: string; amount_due: number; attempt_count: number };
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-        const { empresa_id } = subscription.metadata || {};
-
-        if (empresa_id) {
-          // Mark empresa as overdue
-          await supabase
-            .from('empresas')
-            .update({
-              status: 'em_atraso',
-            })
-            .eq('stripe_subscription_id', subscription.id);
-
-          // Log action
-          await supabase
-            .from('auditoria')
-            .insert({
-              empresa_id: parseInt(empresa_id),
-              acao: 'payment_failed',
-              entidade_tipo: 'empresa',
-              entidade_id: parseInt(empresa_id),
-              detalhes: {
-                invoice_id: invoice.id,
-                amount_due: invoice.amount_due,
-                attempt_count: invoice.attempt_count,
-              },
-            });
-        }
-        break;
-      }
-
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object;
-        const { empresa_id } = subscription.metadata || {};
-
-        if (empresa_id) {
-          // Suspend empresa
-          await supabase
-            .from('empresas')
-            .update({
-              status: 'suspenso',
-              stripe_subscription_id: null,
-            })
-            .eq('stripe_subscription_id', subscription.id);
-
-          // Log action
-          await supabase
-            .from('auditoria')
-            .insert({
-              empresa_id: parseInt(empresa_id),
-              acao: 'subscription_canceled',
-              entidade_tipo: 'empresa',
-              entidade_id: parseInt(empresa_id),
-              detalhes: {
-                subscription_id: subscription.id,
-                canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
-              },
-            });
+            .eq('id', session.metadata?.empresa_id);
         }
         break;
       }
 
       case 'customer.subscription.updated': {
-        const subscription = event.data.object;
-        const { empresa_id, plano_id } = subscription.metadata || {};
+        const subscription = event.data.object as Stripe.Subscription;
+        
+        // Buscar empresa pela subscription ID
+        const { data: empresa } = await supabase
+          .from('empresas')
+          .select('id')
+          .eq('stripe_subscription_id', subscription.id)
+          .single();
 
-        if (empresa_id && plano_id) {
-          // Update plano
+        if (empresa) {
           await supabase
             .from('empresas')
             .update({
-              plano_id: parseInt(plano_id),
-              status: subscription.status === 'active' ? 'ativo' : 'suspenso',
+              updated_at: new Date().toISOString(),
             })
-            .eq('stripe_subscription_id', subscription.id);
+            .eq('id', empresa.id);
+        }
+        break;
+      }
 
-          // Log action
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        
+        // Buscar empresa pela subscription ID
+        const { data: empresa } = await supabase
+          .from('empresas')
+          .select('id')
+          .eq('stripe_subscription_id', subscription.id)
+          .single();
+
+        if (empresa) {
+          // Buscar plano gratuito
+          const { data: planoGratuito } = await supabase
+            .from('planos')
+            .select('id')
+            .eq('preco_mensal', 0)
+            .eq('is_active', true)
+            .single();
+
           await supabase
-            .from('auditoria')
-            .insert({
-              empresa_id: parseInt(empresa_id),
-              acao: 'subscription_updated',
-              entidade_tipo: 'empresa',
-              entidade_id: parseInt(empresa_id),
-              detalhes: {
-                subscription_id: subscription.id,
-                new_plano_id: parseInt(plano_id),
-                status: subscription.status,
-              },
-            });
+            .from('empresas')
+            .update({
+              stripe_subscription_id: null,
+              plano_id: planoGratuito?.id || null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', empresa.id);
+        }
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        
+        if (invoice.subscription) {
+          // Buscar empresa pela subscription ID
+          const { data: empresa } = await supabase
+            .from('empresas')
+            .select('id')
+            .eq('stripe_subscription_id', invoice.subscription as string)
+            .single();
+
+          if (empresa) {
+            await supabase
+              .from('empresas')
+              .update({
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', empresa.id);
+          }
+        }
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        
+        if (invoice.subscription) {
+          // Buscar empresa pela subscription ID
+          const { data: empresa } = await supabase
+            .from('empresas')
+            .select('id')
+            .eq('stripe_subscription_id', invoice.subscription as string)
+            .single();
+
+          if (empresa) {
+            // Aqui você pode implementar lógica para notificar sobre falha no pagamento
+            console.log('Payment failed for empresa:', empresa.id);
+          }
         }
         break;
       }
@@ -211,9 +142,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Webhook processing error:', error);
+    console.error('Webhook error:', error);
     return NextResponse.json(
-      { error: 'Webhook processing failed' },
+      { error: 'Webhook handler failed' },
       { status: 500 }
     );
   }

@@ -23,22 +23,15 @@ export async function requireAuth() {
 }
 
 export async function requireRole(allowedRoles: string[]) {
-  console.log('requireRole called with allowedRoles:', allowedRoles);
-  
   const user = await requireAuth();
-  console.log('User authenticated:', user.id);
-  
   const supabase = await createServerSupabaseClient();
   
   // Primeiro buscar o perfil
-  console.log('requireRole: Buscando perfil para user.id:', user.id);
   const { data: profile, error: profileError } = await supabase
     .from('perfis')
     .select('role, status, empresa_id, nome_completo')
     .eq('id', user.id)
     .single();
-  
-  console.log('requireRole: Resultado da query do perfil:', { profile, profileError });
   
   if (profileError || !profile) {
     console.error('Profile query error:', profileError);
@@ -100,7 +93,10 @@ export async function requireAdmin() {
 }
 
 export async function requireMaster() {
-  return requireRole(['master']);
+  console.log('requireMaster called');
+  const result = await requireRole(['master']);
+  console.log('requireMaster result:', result);
+  return result;
 }
 
 export async function requireUser() {
