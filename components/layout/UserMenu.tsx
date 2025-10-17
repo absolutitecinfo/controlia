@@ -22,15 +22,32 @@ export function UserMenu() {
   const permissions = usePermissions();
 
   const handleLogout = async () => {
+    console.log('Iniciando logout...');
     setIsLoading(true);
     try {
       const supabase = createClient();
-      await supabase.auth.signOut();
-      router.push('/auth/login');
-      toast.success('Logout realizado com sucesso!');
+      console.log('Cliente Supabase criado');
+      
+      const { error } = await supabase.auth.signOut();
+      console.log('Resultado do signOut:', { error });
+      
+      if (error) {
+        console.error('Erro no signOut:', error);
+        // Mesmo com erro, tentar redirecionar
+        toast.warning('Logout com aviso, redirecionando...');
+      } else {
+        toast.success('Logout realizado com sucesso!');
+      }
+      
+      console.log('Redirecionando para login...');
+      // Forçar redirecionamento mesmo se houver erro
+      window.location.href = '/auth/login';
+      
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
-      toast.error('Erro ao fazer logout');
+      toast.error('Erro ao fazer logout, redirecionando...');
+      // Forçar redirecionamento mesmo com erro
+      window.location.href = '/auth/login';
     } finally {
       setIsLoading(false);
     }

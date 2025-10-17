@@ -27,16 +27,39 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - Copie a **Secret key** (começa com `sk_test_`)
 
 ### 3. Configurar Webhooks
+### ⚠️ IMPORTANTE: Webhook Obrigatório para Atualização Automática de Planos
+
+**O webhook é essencial** para que o plano do usuário seja atualizado automaticamente após o pagamento no Stripe.
+
 - No dashboard do Stripe, vá em **Developers > Webhooks**
 - Clique em **Add endpoint**
-- URL do endpoint: `https://seu-dominio.com/api/stripe/webhook`
+- URL do endpoint: `https://seu-dominio.com/api/stripe/webhook` 
 - Eventos para escutar:
-  - `checkout.session.completed`
+  - `checkout.session.completed` ✅ **Obrigatório**
   - `customer.subscription.updated`
   - `customer.subscription.deleted`
   - `invoice.payment_succeeded`
   - `invoice.payment_failed`
 - Copie o **Signing secret** (começa com `whsec_`)
+
+### Configuração Local (.env.local)
+```bash
+# Adicione esta variável ao seu .env.local
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxx
+```
+
+### Para Desenvolvimento Local
+Para testar webhooks localmente, você pode usar o **Stripe CLI**:
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+### Teste Manual
+Se o webhook não estiver configurado, você pode testar a atualização manual:
+1. Vá para o Dashboard Master
+2. Clique em **"Testar Webhook"**
+3. Digite o ID da empresa e o ID do novo plano
+4. O plano será atualizado manualmente
 
 ## 🗄️ Configuração do Banco de Dados
 

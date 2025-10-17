@@ -603,6 +603,37 @@ function MasterContent() {
                     Listar Produtos
                   </Button>
                   <Button 
+                    variant="outline" 
+                    onClick={async () => {
+                      const empresa_id = prompt('Digite o ID da empresa:');
+                      const plano_id = prompt('Digite o ID do novo plano:');
+                      
+                      if (!empresa_id || !plano_id) {
+                        alert('ID da empresa e plano são obrigatórios!');
+                        return;
+                      }
+                      
+                      try {
+                        const response = await fetch('/api/stripe/test-webhook', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          credentials: 'include',
+                          body: JSON.stringify({ empresa_id: parseInt(empresa_id), plano_id: parseInt(plano_id) })
+                        });
+                        const data = await response.json();
+                        console.log('Test webhook response:', data);
+                        alert(`Status: ${response.status}\n${JSON.stringify(data, null, 2)}`);
+                      } catch (error) {
+                        console.error('Test webhook error:', error);
+                        alert(`Error: ${error}`);
+                      }
+                    }}
+                  >
+                    Testar Webhook
+                  </Button>
+                  <Button 
                     variant="destructive" 
                     onClick={async () => {
                       if (confirm('Tem certeza? Isso vai limpar todos os IDs do Stripe e permitir recriar os produtos.')) {

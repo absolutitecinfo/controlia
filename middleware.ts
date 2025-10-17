@@ -219,16 +219,21 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Stripe API routes - require master role
-    if (request.nextUrl.pathname.startsWith('/api/stripe/sync-plans') || 
-        request.nextUrl.pathname.startsWith('/api/stripe/checkout') ||
-        request.nextUrl.pathname.startsWith('/api/stripe/portal')) {
+    // Stripe API routes - only sync-plans requires master role
+    if (request.nextUrl.pathname.startsWith('/api/stripe/sync-plans')) {
       if (profile?.role !== 'master') {
         return NextResponse.json(
           { error: 'Unauthorized - Master access required' },
           { status: 403 }
         );
       }
+    }
+    
+    // Checkout and portal routes are accessible to all authenticated users
+    if (request.nextUrl.pathname.startsWith('/api/stripe/checkout') ||
+        request.nextUrl.pathname.startsWith('/api/stripe/portal')) {
+      // These routes are accessible to all authenticated users (admin, colaborador, master)
+      // No additional role check needed
     }
   }
 
