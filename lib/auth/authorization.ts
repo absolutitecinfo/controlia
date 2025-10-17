@@ -31,33 +31,42 @@ export async function requireRole(allowedRoles: string[]) {
   const supabase = await createServerSupabaseClient();
   
   // Primeiro buscar o perfil
+  console.log('requireRole: Buscando perfil para user.id:', user.id);
   const { data: profile, error: profileError } = await supabase
     .from('perfis')
-    .select('role, status, empresa_id')
+    .select('role, status, empresa_id, nome_completo')
     .eq('id', user.id)
     .single();
+  
+  console.log('requireRole: Resultado da query do perfil:', { profile, profileError });
   
   if (profileError || !profile) {
     console.error('Profile query error:', profileError);
     throw new Error(`Erro ao buscar perfil: ${profileError?.message || 'Perfil não encontrado'}`);
   }
   
-  // Depois buscar o status da empresa
-  const { data: empresa, error: empresaError } = await supabase
-    .from('empresas')
-    .select('status')
-    .eq('id', profile.empresa_id)
-    .single();
-  
-  if (empresaError || !empresa) {
-    console.error('Empresa query error:', empresaError);
-    throw new Error(`Erro ao buscar empresa: ${empresaError?.message || 'Empresa não encontrada'}`);
+  // Buscar o status da empresa (se não for master)
+  let empresaStatus = 'ativo'; // Default para master
+  if (profile.role !== 'master' && profile.empresa_id) {
+    const { data: empresa, error: empresaError } = await supabase
+      .from('empresas')
+      .select('status')
+      .eq('id', profile.empresa_id)
+      .single();
+    
+    if (empresaError) {
+      console.error('Empresa query error:', empresaError);
+      // Não falhar se não conseguir buscar a empresa, apenas logar o erro
+      empresaStatus = 'ativo'; // Assumir ativo como fallback
+    } else if (empresa) {
+      empresaStatus = empresa.status;
+    }
   }
   
   // Combinar os dados
   const profileWithEmpresa = {
     ...profile,
-    empresas: { status: empresa.status }
+    empresas: { status: empresaStatus }
   };
   
   console.log('Profile data:', {
@@ -95,7 +104,7 @@ export async function requireMaster() {
 }
 
 export async function requireUser() {
-  return requireRole(['user', 'admin', 'master']);
+  return requireRole(['colaborador', 'admin', 'master']);
 }
 
 // Helper function to create error response

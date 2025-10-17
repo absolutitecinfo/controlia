@@ -9,22 +9,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { User, Mail, Building, Calendar, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
+import { usePermissions } from "@/hooks/use-permissions";
 
-interface UserProfile {
-  id: string;
-  email: string;
-  nome_completo: string;
-  role: string;
-  status: string;
-  empresa_name: string;
-  created_at: string;
-  last_sign_in_at?: string;
-}
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const permissions = usePermissions();
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -32,80 +21,38 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (permissions.userName) {
+      setFormData({ nome_completo: permissions.userName });
+    }
+  }, [permissions.userName]);
 
-  const fetchProfile = async () => {
+  const handleSave = async () => {
+    if (!permissions.userName) return;
+    
+    setSaving(true);
     try {
       const response = await fetch('/api/auth/me');
       if (!response.ok) {
-        throw new Error('Erro ao buscar perfil');
+        throw new Error('Erro ao buscar ID do usuário');
       }
       
       const userData = await response.json();
       
-      // Buscar dados completos do perfil
-      const supabase = createClient();
-      const { data: profileData, error } = await supabase
-        .from('perfis')
-        .select(`
-          id,
-          nome_completo,
-          role,
-          status,
-          created_at,
-          last_sign_in_at,
-          empresas (
-            nome
-          )
-        `)
-        .eq('id', userData.id)
-        .single();
-
-      if (error) {
-        throw new Error('Erro ao buscar dados do perfil');
-      }
-
-      const fullProfile: UserProfile = {
-        id: profileData.id,
-        email: userData.email,
-        nome_completo: profileData.nome_completo,
-        role: profileData.role,
-        status: profileData.status,
-        empresa_name: profileData.empresas?.nome || 'N/A',
-        created_at: profileData.created_at,
-        last_sign_in_at: profileData.last_sign_in_at
-      };
-
-      setProfile(fullProfile);
-      setFormData({ nome_completo: fullProfile.nome_completo });
-    } catch (error) {
-      console.error('Erro ao buscar perfil:', error);
-      toast.error('Erro ao carregar perfil');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!profile) return;
-    
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/usuarios/${profile.id}`, {
+      const updateResponse = await fetch(`/api/admin/usuarios/${userData.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome_completo: formData.nome_completo }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
         throw new Error(errorData.error || 'Erro ao atualizar perfil');
       }
 
-      setProfile(prev => prev ? { ...prev, nome_completo: formData.nome_completo } : null);
       setEditing(false);
       toast.success('Perfil atualizado com sucesso!');
+      // Recarregar a página para atualizar os dados
+      window.location.reload();
     } catch (error) {
       console.error('Erro ao salvar perfil:', error);
       toast.error(error instanceof Error ? error.message : 'Erro ao salvar perfil');
@@ -114,19 +61,11 @@ export default function ProfilePage() {
     }
   };
 
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const getRoleBadge = (role: string) => {
     const roleConfig = {
@@ -143,7 +82,7 @@ export default function ProfilePage() {
     );
   };
 
-  if (loading) {
+  if (permissions.loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -154,11 +93,23 @@ export default function ProfilePage() {
     );
   }
 
-  if (!profile) {
+  // Debug: Log das permissões
+  console.log('Permissions debug:', {
+    loading: permissions.loading,
+    userName: permissions.userName,
+    userEmail: permissions.userEmail,
+    role: permissions.role,
+    empresaName: permissions.empresaName
+  });
+
+  if (!permissions.userName || !permissions.userEmail) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-destructive">Erro ao carregar perfil</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Debug: userName={permissions.userName || 'null'}, userEmail={permissions.userEmail || 'null'}
+          </p>
         </div>
       </div>
     );
@@ -189,13 +140,13 @@ export default function ProfilePage() {
             <div className="flex items-center space-x-4">
               <Avatar className="h-16 w-16">
                 <AvatarFallback className="text-lg">
-                  {getInitials(profile.nome_completo)}
+                  {getInitials(permissions.userName)}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="text-lg font-semibold">{profile.nome_completo}</h3>
-                <p className="text-sm text-muted-foreground">{profile.email}</p>
-                {getRoleBadge(profile.role)}
+                <h3 className="text-lg font-semibold">{permissions.userName}</h3>
+                <p className="text-sm text-muted-foreground">{permissions.userEmail}</p>
+                {getRoleBadge(permissions.role || 'colaborador')}
               </div>
             </div>
 
@@ -210,7 +161,7 @@ export default function ProfilePage() {
                     className="mt-1"
                   />
                 ) : (
-                  <p className="mt-1 text-sm">{profile.nome_completo}</p>
+                  <p className="mt-1 text-sm">{permissions.userName}</p>
                 )}
               </div>
 
@@ -218,7 +169,7 @@ export default function ProfilePage() {
                 <Label>Email</Label>
                 <div className="flex items-center mt-1">
                   <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <p className="text-sm">{profile.email}</p>
+                  <p className="text-sm">{permissions.userEmail}</p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   O email não pode ser alterado
@@ -229,7 +180,7 @@ export default function ProfilePage() {
                 <Label>Empresa</Label>
                 <div className="flex items-center mt-1">
                   <Building className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <p className="text-sm">{profile.empresa_name}</p>
+                  <p className="text-sm">{permissions.empresaName || 'N/A'}</p>
                 </div>
               </div>
             </div>
@@ -252,7 +203,7 @@ export default function ProfilePage() {
                   </Button>
                   <Button variant="outline" onClick={() => {
                     setEditing(false);
-                    setFormData({ nome_completo: profile.nome_completo });
+                    setFormData({ nome_completo: permissions.userName || '' });
                   }}>
                     Cancelar
                   </Button>
@@ -281,28 +232,31 @@ export default function ProfilePage() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Status da Conta</span>
-                <Badge className={profile.status === 'ativo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                  {profile.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                <Badge className="bg-green-100 text-green-800">
+                  Ativo
                 </Badge>
               </div>
 
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Papel</span>
-                {getRoleBadge(profile.role)}
+                {getRoleBadge(permissions.role || 'colaborador')}
               </div>
 
               <div className="flex justify-between">
-                <span className="text-sm font-medium">Membro desde</span>
+                <span className="text-sm font-medium">Empresa</span>
                 <span className="text-sm text-muted-foreground">
-                  {formatDate(profile.created_at)}
+                  {permissions.empresaName || 'N/A'}
                 </span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-sm font-medium">Último acesso</span>
-                <span className="text-sm text-muted-foreground">
-                  {profile.last_sign_in_at ? formatDate(profile.last_sign_in_at) : 'Nunca'}
-                </span>
+                <span className="text-sm font-medium">Permissões</span>
+                <div className="flex flex-col items-end space-y-1">
+                  {permissions.canViewDashboard && <Badge variant="outline" className="text-xs">Dashboard</Badge>}
+                  {permissions.canViewChats && <Badge variant="outline" className="text-xs">Chats</Badge>}
+                  {permissions.canManageAgents && <Badge variant="outline" className="text-xs">Agentes</Badge>}
+                  {permissions.canManageCompany && <Badge variant="outline" className="text-xs">Empresa</Badge>}
+                </div>
               </div>
             </div>
           </CardContent>
