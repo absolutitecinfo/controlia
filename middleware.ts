@@ -155,7 +155,7 @@ export async function middleware(request: NextRequest) {
 
     // API route protection
     if (request.nextUrl.pathname.startsWith('/api/admin/')) {
-      if (profile?.role !== 'master') {
+      if (!['admin', 'master'].includes(profile?.role || '')) {
         return NextResponse.json(
           { error: 'Unauthorized' },
           { status: 403 }

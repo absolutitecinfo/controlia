@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useConversas } from './use-conversas';
 
 export interface Message {
   id: string;
@@ -23,42 +24,60 @@ export function useChat() {
   const [selectedAgent, setSelectedAgent] = useState<string>('');
   const [conversationUuid, setConversationUuid] = useState<string>('');
   const [hasStartedConversation, setHasStartedConversation] = useState(false);
+  const [agents, setAgents] = useState<ChatAgent[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(true);
+  
+  // Hook para gerenciar conversas
+  const { conversas, addConversa, updateConversa } = useConversas();
 
-  // Lista de agentes disponíveis (hardcoded por enquanto)
-  const agents: ChatAgent[] = [
-    {
-      id: "assistant",
-      name: "Assistente Geral",
-      description: "Ajuda com tarefas gerais e perguntas diversas",
-      icon: null, // Será definido no componente
-      color: "text-primary",
-      isPopular: true
-    },
-    {
-      id: "developer",
-      name: "Desenvolvedor",
-      description: "Especialista em programação e desenvolvimento",
-      icon: null,
-      color: "text-blue-500",
-      isPopular: true
-    },
-    {
-      id: "writer",
-      name: "Escritor",
-      description: "Ajuda com redação e criação de conteúdo",
-      icon: null,
-      color: "text-green-500",
-      isPopular: true
-    },
-    {
-      id: "analyst",
-      name: "Analista",
-      description: "Análise de dados e relatórios",
-      icon: null,
-      color: "text-purple-500",
-      isPopular: false
-    }
-  ];
+  // Buscar agentes da empresa do usuário logado
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        setAgentsLoading(true);
+        const response = await fetch('/api/agentes');
+        
+        if (!response.ok) {
+          throw new Error('Erro ao buscar agentes');
+        }
+        
+        const agentesData = await response.json();
+        
+        // Converter dados da API para o formato esperado pelo chat
+        const chatAgents: ChatAgent[] = agentesData
+          .filter((agente: any) => agente.is_active) // Apenas agentes ativos
+          .map((agente: any) => ({
+            id: agente.id,
+            name: agente.nome,
+            description: agente.descricao,
+            icon: null, // Será definido no componente
+            color: agente.cor || '#3B82F6',
+            isPopular: agente.is_popular
+          }));
+        
+        setAgents(chatAgents);
+      } catch (error) {
+        console.error('Erro ao buscar agentes:', error);
+        toast.error('Erro ao carregar agentes');
+        
+        // Fallback para agentes padrão se houver erro
+        setAgents([
+          {
+            id: "assistant",
+            name: "Assistente Geral",
+            description: "Ajuda com tarefas gerais e perguntas diversas",
+            icon: null,
+            color: "text-primary",
+            isPopular: true
+          }
+        ]);
+      } finally {
+        setAgentsLoading(false);
+      }
+    };
+
+    fetchAgents();
+  }, []);
 
   const sendMessage = async (message: string, agentId: string) => {
     if (!message.trim() || isLoading) return;
@@ -72,6 +91,16 @@ export function useChat() {
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+
+    // Criar mensagem de assistente vazia para streaming
+    const assistantMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: '',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, assistantMessage]);
 
     try {
       const response = await fetch('/api/chat', {
@@ -88,24 +117,70 @@ export function useChat() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao enviar mensagem');
+        // Tentar ler erro como JSON primeiro
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Erro ao enviar mensagem');
+        } catch (jsonError) {
+          // Se não conseguir fazer parse do JSON, usar texto da resposta
+          const errorText = await response.text();
+          throw new Error(errorText || 'Erro ao enviar mensagem');
+        }
       }
 
-      const data = await response.json();
-      
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.response,
-        timestamp: new Date()
-      };
+      // Verificar se é streaming response
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('text/event-stream')) {
+        // Processar streaming
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
 
-      setMessages(prev => [...prev, assistantMessage]);
-      
-      // Se é uma nova conversa, salvar o UUID
-      if (data.conversationUuid && !conversationUuid) {
-        setConversationUuid(data.conversationUuid);
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  
+                  if (data.error) {
+                    throw new Error(data.error);
+                  }
+                  
+                  if (data.content) {
+                    // Atualizar mensagem do assistente com novo conteúdo
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === assistantMessage.id 
+                        ? { ...msg, content: msg.content + data.content }
+                        : msg
+                    ));
+                  }
+                  
+                  if (data.done) {
+                    // Streaming terminou
+                    break;
+                  }
+                } catch (parseError) {
+                  console.error('Error parsing SSE data:', parseError, line);
+                }
+              }
+            }
+          }
+        }
+      } else {
+        // Fallback para resposta JSON normal
+        const data = await response.json();
+        
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessage.id 
+            ? { ...msg, content: data.response || data.content || '' }
+            : msg
+        ));
       }
 
       // Marcar que a conversa começou
@@ -117,14 +192,12 @@ export function useChat() {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast.error(errorMessage);
       
-      // Adicionar mensagem de erro
-      const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `Erro: ${errorMessage}`,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMsg]);
+      // Atualizar mensagem de erro
+      setMessages(prev => prev.map(msg => 
+        msg.id === assistantMessage.id 
+          ? { ...msg, content: `Erro: ${errorMessage}` }
+          : msg
+      ));
     } finally {
       setIsLoading(false);
     }
@@ -144,6 +217,35 @@ export function useChat() {
     setSelectedAgent('');
   };
 
+  const loadConversation = async (conversationUuid: string) => {
+    try {
+      // Buscar conversa específica
+      const response = await fetch(`/api/conversas/${conversationUuid}`);
+      if (!response.ok) {
+        throw new Error('Erro ao carregar conversa');
+      }
+      
+      const conversa = await response.json();
+      
+      // Carregar mensagens da conversa
+      const conversaMessages: Message[] = conversa.mensagens?.map((msg: any, index: number) => ({
+        id: msg.message_uuid || `msg-${index}`,
+        role: msg.role,
+        content: msg.content,
+        timestamp: new Date(msg.timestamp)
+      })) || [];
+      
+      setMessages(conversaMessages);
+      setConversationUuid(conversationUuid);
+      setSelectedAgent(conversa.agente_id);
+      setHasStartedConversation(true);
+      
+    } catch (error) {
+      console.error('Erro ao carregar conversa:', error);
+      toast.error('Erro ao carregar conversa');
+    }
+  };
+
   return {
     messages,
     isLoading,
@@ -151,9 +253,12 @@ export function useChat() {
     conversationUuid,
     hasStartedConversation,
     agents,
+    agentsLoading,
+    conversas, // Exportar conversas para o componente
     sendMessage,
     startNewConversation,
     clearConversation,
+    loadConversation,
     setSelectedAgent
   };
 }

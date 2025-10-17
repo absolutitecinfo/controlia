@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Bot, User, Loader2, Brain, Code, FileText, Zap, Star } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@/hooks/use-chat";
+import { useSearchParams } from "next/navigation";
 
 export default function Colaborador() {
   const {
@@ -14,10 +15,14 @@ export default function Colaborador() {
     selectedAgent,
     hasStartedConversation,
     agents,
+    agentsLoading,
     sendMessage,
     startNewConversation,
-    clearConversation
+    clearConversation,
+    loadConversation
   } = useChat();
+  
+  const searchParams = useSearchParams();
 
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -33,6 +38,14 @@ export default function Colaborador() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Carregar conversa específica se há parâmetro na URL
+  useEffect(() => {
+    const conversationUuid = searchParams.get('conversation');
+    if (conversationUuid && loadConversation) {
+      loadConversation(conversationUuid);
+    }
+  }, [searchParams, loadConversation]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading || !selectedAgent) return;
@@ -69,26 +82,50 @@ export default function Colaborador() {
           </p>
         </div>
 
-        {/* Centralized Input Area */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-2xl mx-auto">
-            {/* Welcome Message */}
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-hero-gradient mb-2">
-                Olá!
-              </h2>
-              <p className="text-muted-foreground text-lg">
-                ControlIA para sua Empresa
+        {/* Loading State */}
+        {agentsLoading && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Carregando agentes...</p>
+            </div>
+          </div>
+        )}
+
+        {/* No Agents State */}
+        {!agentsLoading && agents.length === 0 && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Bot className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum agente disponível</h3>
+              <p className="text-muted-foreground">
+                Entre em contato com o administrador para configurar agentes para sua empresa.
               </p>
             </div>
+          </div>
+        )}
 
-            {/* Agent Selection - Popular Agents Quick Access */}
-            <div className="space-y-6 mb-8">
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <Star className="h-5 w-5 mr-2 text-yellow-500" />
-                  Agentes Populares
-                </h3>
+        {/* Centralized Input Area */}
+        {!agentsLoading && agents.length > 0 && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full max-w-2xl mx-auto">
+              {/* Welcome Message */}
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-semibold text-hero-gradient mb-2">
+                  Olá!
+                </h2>
+                <p className="text-muted-foreground text-lg">
+                  ControlIA para sua Empresa
+                </p>
+              </div>
+
+              {/* Agent Selection - Popular Agents Quick Access */}
+              <div className="space-y-6 mb-8">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Star className="h-5 w-5 mr-2 text-yellow-500" />
+                    Agentes Populares
+                  </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {popularAgents.map((agent) => {
                     const IconComponent = agent.id === 'assistant' ? Brain :
@@ -114,10 +151,10 @@ export default function Colaborador() {
                     );
                   })}
                 </div>
-              </div>
+                </div>
 
-              {/* All Agents Grid */}
-              <div>
+                {/* All Agents Grid */}
+                <div>
                 <h3 className="text-lg font-semibold mb-4">Todos os Agentes</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {agents.map((agent) => {
@@ -147,10 +184,11 @@ export default function Colaborador() {
                     );
                   })}
                 </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }

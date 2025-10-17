@@ -2,43 +2,88 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function requireAuth() {
+  console.log('requireAuth called');
   const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  
+  console.log('Auth result:', { user: user?.id, error });
+  
+  if (error) {
+    console.error('Auth error:', error);
+    throw new Error(`Erro de autenticação: ${error.message}`);
+  }
   
   if (!user) {
+    console.error('No user found');
     throw new Error('Não autenticado');
   }
   
+  console.log('User authenticated successfully:', user.id);
   return user;
 }
 
 export async function requireRole(allowedRoles: string[]) {
+  console.log('requireRole called with allowedRoles:', allowedRoles);
+  
   const user = await requireAuth();
+  console.log('User authenticated:', user.id);
+  
   const supabase = await createServerSupabaseClient();
   
-  const { data: profile } = await supabase
+  // Primeiro buscar o perfil
+  const { data: profile, error: profileError } = await supabase
     .from('perfis')
-    .select('role, status, empresa_id, empresas(status)')
+    .select('role, status, empresa_id')
     .eq('id', user.id)
     .single();
   
-  if (!profile) {
-    throw new Error('Perfil não encontrado');
+  if (profileError || !profile) {
+    console.error('Profile query error:', profileError);
+    throw new Error(`Erro ao buscar perfil: ${profileError?.message || 'Perfil não encontrado'}`);
   }
   
-  if (profile.status !== 'ativo') {
+  // Depois buscar o status da empresa
+  const { data: empresa, error: empresaError } = await supabase
+    .from('empresas')
+    .select('status')
+    .eq('id', profile.empresa_id)
+    .single();
+  
+  if (empresaError || !empresa) {
+    console.error('Empresa query error:', empresaError);
+    throw new Error(`Erro ao buscar empresa: ${empresaError?.message || 'Empresa não encontrada'}`);
+  }
+  
+  // Combinar os dados
+  const profileWithEmpresa = {
+    ...profile,
+    empresas: { status: empresa.status }
+  };
+  
+  console.log('Profile data:', {
+    role: profileWithEmpresa.role,
+    status: profileWithEmpresa.status,
+    empresa_id: profileWithEmpresa.empresa_id,
+    empresa_status: profileWithEmpresa.empresas?.status
+  });
+  
+  if (profileWithEmpresa.status !== 'ativo') {
+    console.error('User status not active:', profileWithEmpresa.status);
     throw new Error('Usuário suspenso');
   }
   
-  if (profile.empresas?.[0]?.status !== 'ativo') {
+  if (profileWithEmpresa.empresas?.status !== 'ativo') {
+    console.error('Empresa status not active:', profileWithEmpresa.empresas?.status);
     throw new Error('Empresa suspensa');
   }
   
-  if (!allowedRoles.includes(profile.role)) {
+  if (!allowedRoles.includes(profileWithEmpresa.role)) {
+    console.error('Role not allowed:', profileWithEmpresa.role, 'allowed:', allowedRoles);
     throw new Error('Sem permissão');
   }
   
-  return { user, profile };
+  console.log('Authorization successful for user:', user.id);
+  return { user, profile: profileWithEmpresa };
 }
 
 export async function requireAdmin() {

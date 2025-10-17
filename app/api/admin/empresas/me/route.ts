@@ -3,8 +3,11 @@ import { requireAdmin } from '@/lib/auth/authorization';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function GET() {
+  console.log('=== API GET /api/admin/empresas/me called ===');
   try {
+    console.log('Calling requireAdmin...');
     const { profile } = await requireAdmin();
+    console.log('requireAdmin successful, profile:', profile);
     const supabase = await createServerSupabaseClient();
 
     const { data: empresa, error } = await supabase
@@ -55,8 +58,11 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  console.log('=== API PATCH /api/admin/empresas/me called ===');
   try {
+    console.log('Calling requireAdmin...');
     const { profile } = await requireAdmin();
+    console.log('requireAdmin successful, profile:', profile);
     const supabase = await createServerSupabaseClient();
 
     const body = await req.json();

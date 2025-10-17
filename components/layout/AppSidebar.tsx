@@ -3,7 +3,7 @@
 import { Home, MessageSquare, Settings, BarChart3, Plus, Trash2, Bot } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useConversas } from "@/hooks/use-conversas";
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
@@ -32,26 +33,37 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
   const isChatPage = pathname === "/dashboard/colaborador";
   
-  // Estado para gerenciar chats (simulado)
-  const [chats, setChats] = useState([
-    { id: 1, title: "Conversa sobre IA", lastMessage: "Como funciona o machine learning?", timestamp: "10:30" },
-    { id: 2, title: "Dúvidas sobre código", lastMessage: "Preciso de ajuda com React", timestamp: "09:15" },
-    { id: 3, title: "Análise de dados", lastMessage: "Como criar um dashboard?", timestamp: "Ontem" },
-    { id: 4, title: "Estratégia de marketing", lastMessage: "Campanhas para Q1 2024", timestamp: "Ontem" },
-  ]);
+  // Hook para gerenciar conversas reais
+  const { conversas, loading: conversasLoading, deleteConversa } = useConversas();
 
   const createNewChat = () => {
-    const newChat = {
-      id: Date.now(),
-      title: "Nova Conversa",
-      lastMessage: "Conversa iniciada",
-      timestamp: "Agora"
-    };
-    setChats([newChat, ...chats]);
+    // Esta função será chamada quando o usuário clicar em "Nova Conversa" na página de chat
+    // O hook useChat já gerencia isso
+    toast.info("Navegue para a página de Chats para iniciar uma nova conversa");
   };
 
-  const deleteChat = (chatId: number) => {
-    setChats(chats.filter(chat => chat.id !== chatId));
+  const handleDeleteChat = async (conversationUuid: string) => {
+    try {
+      await deleteConversa(conversationUuid);
+    } catch (error) {
+      console.error('Erro ao excluir conversa:', error);
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 1) {
+      return "Agora";
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h`;
+    } else if (diffInHours < 48) {
+      return "Ontem";
+    } else {
+      return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    }
   };
 
   return (
@@ -117,35 +129,54 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <ScrollArea className="h-[calc(100vh-16rem)] sidebar-scrollbar">
                 <div className="space-y-1 px-2">
-                  {chats.map((chat) => (
-                    <div
-                      key={chat.id}
-                      className="group relative flex items-center gap-2 rounded-md p-2 text-sm hover:bg-sidebar-accent/50 transition-smooth"
-                    >
-                      <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      {!isCollapsed && (
-                        <>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{chat.title}</div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {chat.lastMessage}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {chat.timestamp}
-                            </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => deleteChat(chat.id)}
-                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </>
-                      )}
+                  {conversasLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <div className="text-xs text-muted-foreground">Carregando...</div>
                     </div>
-                  ))}
+                  ) : conversas.length === 0 ? (
+                    <div className="flex items-center justify-center p-4">
+                      <div className="text-xs text-muted-foreground text-center">
+                        Nenhuma conversa ainda
+                      </div>
+                    </div>
+                  ) : (
+                    conversas.map((conversa) => (
+                      <div
+                        key={conversa.uuid}
+                        className="group relative flex items-center gap-2 rounded-md p-2 text-sm hover:bg-sidebar-accent/50 transition-smooth cursor-pointer"
+                        onClick={() => {
+                          // Navegar para a conversa específica
+                          window.location.href = `/dashboard/colaborador?conversation=${conversa.uuid}`;
+                        }}
+                      >
+                        <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        {!isCollapsed && (
+                          <>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{conversa.titulo}</div>
+                              <div className="text-xs text-muted-foreground truncate">
+                                {conversa.agente.nome}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatTimestamp(conversa.updated_at)}
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteChat(conversa.uuid);
+                              }}
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </ScrollArea>
             </SidebarGroupContent>
