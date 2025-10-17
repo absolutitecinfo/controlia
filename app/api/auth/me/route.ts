@@ -25,7 +25,8 @@ export async function GET() {
       role: profile.role,
       status: profile.status,
       empresaName,
-      empresaId: profile.empresa_id
+      empresaId: profile.empresa_id,
+      nome_completo: profile.nome_completo
     });
   } catch (error) {
     console.error('Auth me error:', error);

@@ -8,6 +8,8 @@ export interface UserPermissions {
   canAccessMaster: boolean;
   role: string | null;
   empresaName: string | null;
+  userName: string | null;
+  userEmail: string | null;
   loading: boolean;
 }
 
@@ -20,6 +22,8 @@ export function usePermissions() {
     canAccessMaster: false,
     role: null,
     empresaName: null,
+    userName: null,
+    userEmail: null,
     loading: true
   });
 
@@ -45,6 +49,8 @@ export function usePermissions() {
           canAccessMaster: role === 'master',
           role,
           empresaName,
+          userName: userData.nome_completo || null,
+          userEmail: userData.email || null,
           loading: false
         };
 
