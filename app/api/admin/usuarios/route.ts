@@ -4,16 +4,23 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
+    console.log('🔍 Iniciando busca de usuários...');
+    
+    // Verificar autenticação
     const { profile } = await requireAdmin();
+    console.log('✅ Profile obtido:', { empresa_id: profile.empresa_id, role: profile.role });
+    
     const supabase = await createServerSupabaseClient();
+    console.log('✅ Cliente Supabase criado');
 
-    // Buscar todos os usuários da empresa
+    // Buscar usuários da empresa
+    console.log('🔍 Buscando usuários da empresa:', profile.empresa_id);
     const { data: usuarios, error } = await supabase
       .from('perfis')
       .select(`
         id,
         nome_completo,
-        email:auth.users!inner(email),
+        email,
         role,
         status,
         created_at,
@@ -24,16 +31,17 @@ export async function GET() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching usuarios:', error);
+      console.error('❌ Error fetching usuarios:', error);
       return NextResponse.json(
-        { error: 'Erro ao buscar usuários' },
+        { error: 'Erro ao buscar usuários', details: error.message },
         { status: 500 }
       );
     }
 
+    console.log('✅ Usuários encontrados:', usuarios?.length || 0);
     return NextResponse.json(usuarios);
   } catch (error) {
-    console.error('Usuarios GET error:', error);
+    console.error('❌ Usuarios GET error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
       { status: 401 }

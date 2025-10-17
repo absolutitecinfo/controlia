@@ -295,32 +295,32 @@ function AgentesIAContent() {
         {agents.map((agent) => (
           <Card key={agent.id} className="relative">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start space-x-3 flex-1 min-w-0">
                   {agent.icone_url ? (
                     <Image
                       src={agent.icone_url}
                       alt={agent.nome}
                       width={40}
                       height={40}
-                      className="rounded-full"
+                      className="rounded-full flex-shrink-0"
                     />
                   ) : (
                     <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0"
                       style={{ backgroundColor: agent.cor }}
                     >
                       <Bot className="h-5 w-5" />
                     </div>
                   )}
-                  <div>
-                    <CardTitle className="text-lg">{agent.nome}</CardTitle>
-                    <CardDescription className="text-sm">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg truncate">{agent.nome}</CardTitle>
+                    <CardDescription className="text-sm line-clamp-2 break-words">
                       {agent.descricao}
                     </CardDescription>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-shrink-0">
                   <Switch
                     checked={agent.is_active}
                     onCheckedChange={() => handleToggleStatus(agent)}
