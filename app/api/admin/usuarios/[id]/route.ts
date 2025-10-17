@@ -112,7 +112,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { profile } = await requireAdmin();
+    const { user, profile } = await requireAdmin();
     const supabase = await createServerSupabaseClient();
     const { id } = await params;
 
@@ -132,7 +132,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     // Não permitir deletar a si mesmo
-    if (id === profile.id) {
+    if (id === user.id) {
       return NextResponse.json(
         { error: 'Você não pode deletar sua própria conta' },
         { status: 400 }

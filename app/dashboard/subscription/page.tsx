@@ -290,7 +290,7 @@ export default function SubscriptionPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {availablePlanos.map((plano) => (
               <Card key={plano.id} className="relative">
-                {plano.popular && (
+                {(plano as any).popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                     <Badge className="bg-primary text-primary-foreground">
                       Mais Popular
@@ -327,9 +327,9 @@ export default function SubscriptionPage() {
                   </div>
 
                   <Button 
-                    onClick={() => handleUpgrade(plano.id)}
+                    onClick={() => handleUpgrade(plano.id.toString())}
                     className="w-full"
-                    variant={plano.popular ? "default" : "outline"}
+                    variant={(plano as any).popular ? "default" : "outline"}
                   >
                     <ArrowUp className="h-4 w-4 mr-2" />
                     Fazer Upgrade

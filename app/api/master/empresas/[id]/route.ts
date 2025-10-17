@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireMaster } from '@/lib/auth/authorization';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireMaster();
     const supabase = await createServerSupabaseClient();
-    const { id } = params;
+    const { id } = await params;
 
     const { data: empresa, error } = await supabase
       .from('empresas')
@@ -56,11 +56,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireMaster();
     const supabase = await createServerSupabaseClient();
-    const { id } = params;
+    const { id } = await params;
 
     const { nome, email, telefone, endereco, status, plano_id } = await request.json();
 
@@ -107,11 +107,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireMaster();
     const supabase = await createServerSupabaseClient();
-    const { id } = params;
+    const { id } = await params;
 
     // Verificar se a empresa tem usuários ativos
     const { data: usuarios, error: usuariosError } = await supabase

@@ -60,16 +60,19 @@ export async function GET() {
     // Calcular receita mensal
     const receitaMensal = empresas.reduce((total, empresa) => {
       if (empresa.planos && empresa.status === 'ativa') {
-        return total + (empresa.planos.preco_mensal || 0);
+        const plano = Array.isArray(empresa.planos) ? empresa.planos[0] : empresa.planos;
+        return total + (plano?.preco_mensal || 0);
       }
       return total;
     }, 0);
 
     // Distribuição por planos
     const distribuicaoPlanos = planos.map(plano => {
-      const empresasComPlano = empresas.filter(e => 
-        e.planos && e.planos.id === plano.id && e.status === 'ativa'
-      ).length;
+      const empresasComPlano = empresas.filter(e => {
+        if (!e.planos || e.status !== 'ativa') return false;
+        const planoEmpresa = Array.isArray(e.planos) ? e.planos[0] : e.planos;
+        return planoEmpresa?.id === plano.id;
+      }).length;
       
       return {
         id: plano.id,

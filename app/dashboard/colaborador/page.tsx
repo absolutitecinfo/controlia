@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Bot, User, Loader2, Brain, Code, FileText, Zap, Star } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useChat } from "@/hooks/use-chat";
 import { useSearchParams } from "next/navigation";
 
-export default function Colaborador() {
+function ColaboradorContent() {
   const {
     messages,
     isLoading,
@@ -319,5 +319,20 @@ export default function Colaborador() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Colaborador() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    }>
+      <ColaboradorContent />
+    </Suspense>
   );
 }

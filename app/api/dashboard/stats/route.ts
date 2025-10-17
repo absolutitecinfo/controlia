@@ -72,8 +72,9 @@ export async function GET() {
 
     // Calcular tendências
     const conversasAtuais = conversasRecentes?.length || 0;
-    const tendenciaConversas = conversasAnteriores > 0 
-      ? ((conversasAtuais - conversasAnteriores) / conversasAnteriores * 100).toFixed(1)
+    const conversasAnterioresCount = conversasAnteriores || 0;
+    const tendenciaConversas = conversasAnterioresCount > 0 
+      ? ((conversasAtuais - conversasAnterioresCount) / conversasAnterioresCount * 100).toFixed(1)
       : conversasAtuais > 0 ? '100.0' : '0.0';
 
     // Calcular taxa de sucesso (conversas com pelo menos 2 mensagens)

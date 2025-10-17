@@ -95,14 +95,14 @@ export async function POST(request: NextRequest) {
       }
 
       case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object as any;
         
-        if (invoice.subscription) {
+        if (invoice.subscription && typeof invoice.subscription === 'string') {
           // Buscar empresa pela subscription ID
           const { data: empresa } = await supabase
             .from('empresas')
             .select('id')
-            .eq('stripe_subscription_id', invoice.subscription as string)
+            .eq('stripe_subscription_id', invoice.subscription)
             .single();
 
           if (empresa) {
@@ -118,14 +118,14 @@ export async function POST(request: NextRequest) {
       }
 
       case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object as any;
         
-        if (invoice.subscription) {
+        if (invoice.subscription && typeof invoice.subscription === 'string') {
           // Buscar empresa pela subscription ID
           const { data: empresa } = await supabase
             .from('empresas')
             .select('id')
-            .eq('stripe_subscription_id', invoice.subscription as string)
+            .eq('stripe_subscription_id', invoice.subscription)
             .single();
 
           if (empresa) {

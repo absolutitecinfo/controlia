@@ -35,8 +35,9 @@ export async function POST() {
       console.log('Stripe connection successful, found', testProduct.data.length, 'existing products');
     } catch (stripeError) {
       console.error('Stripe connection failed:', stripeError);
+      const errorMessage = stripeError instanceof Error ? stripeError.message : 'Unknown error';
       return NextResponse.json(
-        { error: `Stripe connection failed: ${stripeError.message}` },
+        { error: `Stripe connection failed: ${errorMessage}` },
         { status: 500 }
       );
     }
@@ -108,11 +109,12 @@ export async function POST() {
 
         if (updateError) {
           console.error('Error updating plan:', updateError);
+          const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error';
           results.push({
             plano_id: plano.id,
             plano_nome: plano.nome,
             status: 'error',
-            error: updateError.message,
+            error: errorMessage,
           });
         } else {
           results.push({
@@ -125,11 +127,12 @@ export async function POST() {
         }
       } catch (stripeError: any) {
         console.error('Stripe error for plan:', plano.nome, stripeError);
+        const errorMessage = stripeError instanceof Error ? stripeError.message : 'Unknown error';
         results.push({
           plano_id: plano.id,
           plano_nome: plano.nome,
           status: 'error',
-          error: stripeError.message,
+          error: errorMessage,
         });
       }
     }

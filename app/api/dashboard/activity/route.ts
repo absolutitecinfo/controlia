@@ -74,16 +74,26 @@ export async function GET() {
       .limit(5);
 
     // Formatar atividade recente
-    const activities = [];
+    const activities: Array<{
+      id: string;
+      type: string;
+      title: string;
+      description: string;
+      timestamp: string;
+      icon: string;
+    }> = [];
 
     // Adicionar conversas recentes
     conversasRecentes?.forEach(conversa => {
-      const empresaInfo = isMaster ? ` (${conversa.empresas?.nome})` : '';
+      const empresa = Array.isArray(conversa.empresas) ? conversa.empresas[0] : conversa.empresas;
+      const agente = Array.isArray(conversa.agentes_ia) ? conversa.agentes_ia[0] : conversa.agentes_ia;
+      const empresaInfo = isMaster ? ` (${empresa?.nome})` : '';
+      
       activities.push({
         id: `conversa-${conversa.id}`,
         type: 'conversation',
         title: 'Nova conversa iniciada',
-        description: `"${conversa.titulo}" com ${conversa.agentes_ia?.nome || 'Agente'}${empresaInfo}`,
+        description: `"${conversa.titulo}" com ${agente?.nome || 'Agente'}${empresaInfo}`,
         timestamp: conversa.created_at,
         icon: 'message-square'
       });
@@ -91,7 +101,8 @@ export async function GET() {
 
     // Adicionar novos usuários
     usuariosRecentes?.forEach(usuario => {
-      const empresaInfo = isMaster ? ` (${usuario.empresas?.nome})` : '';
+      const empresa = Array.isArray(usuario.empresas) ? usuario.empresas[0] : usuario.empresas;
+      const empresaInfo = isMaster ? ` (${empresa?.nome})` : '';
       activities.push({
         id: `usuario-${usuario.id}`,
         type: 'user',
@@ -104,7 +115,8 @@ export async function GET() {
 
     // Adicionar novos agentes
     agentesRecentes?.forEach(agente => {
-      const empresaInfo = isMaster ? ` (${agente.empresas?.nome})` : '';
+      const empresa = Array.isArray(agente.empresas) ? agente.empresas[0] : agente.empresas;
+      const empresaInfo = isMaster ? ` (${empresa?.nome})` : '';
       activities.push({
         id: `agente-${agente.id}`,
         type: 'agent',

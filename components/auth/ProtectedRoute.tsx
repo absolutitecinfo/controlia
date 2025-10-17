@@ -26,7 +26,7 @@ export function ProtectedRoute({
       );
 
       if (!hasPermission) {
-        router.push(fallbackRoute);
+        router.push(fallbackRoute as any);
       }
     }
   }, [permissions, requiredPermissions, fallbackRoute, router]);
@@ -55,7 +55,7 @@ export function ProtectedRoute({
             Você não tem permissão para acessar esta página.
           </p>
           <button 
-            onClick={() => router.push(fallbackRoute)}
+            onClick={() => router.push(fallbackRoute as any)}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
           >
             Voltar ao Dashboard
