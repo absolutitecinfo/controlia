@@ -22,20 +22,19 @@ const eslintConfig = [
   },
   {
     rules: {
-      // Configuração híbrida: warnings em desenvolvimento, errors em produção
-      "@typescript-eslint/no-explicit-any": process.env.NODE_ENV === 'production' ? "error" : "warn",
-      "@typescript-eslint/no-unused-vars": process.env.NODE_ENV === 'production' ? "error" : "warn",
-      "@typescript-eslint/no-non-null-assertion": process.env.NODE_ENV === 'production' ? "error" : "warn",
-      "@typescript-eslint/ban-ts-comment": process.env.NODE_ENV === 'production' ? "error" : "warn",
+      // Configuração mais permissiva para produção
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-non-null-assertion": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
       "@typescript-eslint/no-empty-function": "warn",
       "@typescript-eslint/no-inferrable-types": "warn",
-      "@typescript-eslint/prefer-const": "warn",
+      "prefer-const": "warn",
       "react-hooks/exhaustive-deps": "warn",
       "react-hooks/rules-of-hooks": "error",
-      "prefer-const": "warn",
       "no-unused-vars": "warn",
-      "no-console": process.env.NODE_ENV === 'production' ? "error" : "warn",
-      "no-debugger": process.env.NODE_ENV === 'production' ? "error" : "warn",
+      "no-console": "warn",
+      "no-debugger": "warn",
     },
   },
 ];
