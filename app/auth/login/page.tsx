@@ -9,6 +9,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Mail } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -16,6 +18,8 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
     const message = searchParams.get('message');
@@ -115,12 +119,38 @@ function LoginForm() {
       if (errorMessage.includes('Invalid login credentials')) {
         toast.error("Email ou senha incorretos");
       } else if (errorMessage.includes('Email not confirmed')) {
+        setNeedsConfirmation(true);
         toast.error("Confirme seu email antes de fazer login");
       } else {
         toast.error(errorMessage || "Erro ao fazer login");
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast.error("Informe seu email para reenviar a confirmação");
+      return;
+    }
+    try {
+      setResendLoading(true);
+      const supabase = createClient();
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/login?message=check-email` : undefined,
+        },
+      });
+      if (error) throw error;
+      toast.success("Email de confirmação reenviado. Verifique sua caixa de entrada.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao reenviar confirmação';
+      toast.error(msg);
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -143,6 +173,23 @@ function LoginForm() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {needsConfirmation && (
+              <Alert className="mb-4">
+                <Mail className="h-4 w-4" />
+                <AlertTitle>Email não confirmado</AlertTitle>
+                <AlertDescription>
+                  Enviamos um link de confirmação para seu email. Caso não tenha recebido, você pode
+                  <button
+                    type="button"
+                    className="ml-1 underline text-primary disabled:opacity-50"
+                    onClick={handleResendConfirmation}
+                    disabled={resendLoading}
+                  >
+                    {resendLoading ? 'Reenviando…' : 'reenviar o email'}
+                  </button>.
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { nome, descricao, instrucoes, icone_url, is_active, is_popular, cor } = body;
+    const { nome, descricao, instrucoes, icone, is_active, is_popular, cor } = body;
 
     if (!nome || !descricao || !instrucoes) {
       return NextResponse.json(
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         nome,
         descricao,
         instrucoes,
-        icone_url: icone_url || null,
+        icone_url: icone || null,
         is_active: is_active ?? true,
         is_popular: is_popular ?? false,
         cor: cor || '#3B82F6',

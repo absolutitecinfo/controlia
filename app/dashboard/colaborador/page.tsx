@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Bot, User, Loader2, Brain, Code, FileText, Zap, Star, ChevronDown, MessageSquare, Settings, BarChart3, Copy, Check } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Send, Bot, User, Loader2, Brain, Code, FileText, Zap, ChevronDown, MessageSquare, Settings, BarChart3, Copy, Check, Wrench, Star, ShoppingCart, Shield, Rocket, BookOpen, Briefcase, Cpu, Database, Globe, Lightbulb, Mic, PenTool } from "lucide-react";
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useChat } from "@/hooks/use-chat";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useSearchParams } from "next/navigation";
 
 function ColaboradorContent() {
@@ -22,12 +25,14 @@ function ColaboradorContent() {
     clearConversation,
     loadConversation
   } = useChat();
+  const permissions = usePermissions();
   
   const searchParams = useSearchParams();
 
   const [input, setInput] = useState("");
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [agentsOpen, setAgentsOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -145,45 +150,63 @@ function ColaboradorContent() {
         {!agentsLoading && agents.length > 0 && (
           <div className="flex-1 flex items-center justify-center">
             <div className="w-full max-w-4xl mx-auto px-4">
-              {/* Main Input Area */}
-              <div className="bg-card border rounded-lg p-6 shadow-lg">
+              {/* Main Input Area - now transparent and borderless */}
+              <div className="p-6">
                 <div className="space-y-4">
-                  {/* Agent Selection Dropdown */}
-                  <div className="flex items-center space-x-3">
-                    <Select value={selectedAgentId || ""} onValueChange={handleAgentSelect}>
-                      <SelectTrigger className="w-64">
-                        <SelectValue placeholder="Selecione um agente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {agents.map((agent) => {
-                          const IconComponent = agent.id === 'assistant' ? Brain :
-                                              agent.id === 'developer' ? Code :
-                                              agent.id === 'writer' ? FileText :
-                                              agent.id === 'analyst' ? Zap : Bot;
-                          
+                  {/* Saudações e Agentes Populares */}
+                  <div className="text-center space-y-2">
+                    <h2 className="text-2xl font-bold text-hero-gradient">
+                      {(() => {
+                        const fullName = permissions.userName || permissions.userEmail || '';
+                        const firstName = fullName.split(' ')[0];
+                        return `Olá${firstName ? `, ${firstName}` : '!'}`;
+                      })()}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">ControlIA para sua Empresa</p>
+                  </div>
+                  {popularAgents.length > 0 && (
+                    <div className="pt-2">
+                      <div className="mb-3 text-center text-sm font-medium">Agentes Populares</div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {popularAgents.map((agent) => {
+                          const iconMap: Record<string, any> = {
+                            brain: Brain,
+                            code: Code,
+                            'file-text': FileText,
+                            zap: Zap,
+                            message: MessageSquare,
+                            cart: ShoppingCart,
+                            wrench: Wrench,
+                            chart: BarChart3,
+                            shield: Shield,
+                            rocket: Rocket,
+                            book: BookOpen,
+                            briefcase: Briefcase,
+                            cpu: Cpu,
+                            db: Database,
+                            globe: Globe,
+                            idea: Lightbulb,
+                            mic: Mic,
+                            pen: PenTool,
+                            settings: Settings,
+                            star: Star,
+                          };
+                          const IconComponent = iconMap[agent.icon as string] || Brain;
                           return (
-                            <SelectItem key={agent.id} value={agent.id}>
-                              <div className="flex items-center space-x-2">
-                                <IconComponent className={`h-4 w-4 ${agent.color}`} />
-                                <span>{agent.name}</span>
-                                {agent.isPopular && <Star className="h-3 w-3 text-yellow-500" />}
-                              </div>
-                            </SelectItem>
+                            <Button
+                              key={agent.id}
+                              variant="outline"
+                              className="h-20 flex flex-col items-center justify-center gap-1 px-2 [&_svg]:!size-7"
+                              onClick={() => handleAgentSelect(agent.id)}
+                            >
+                              <IconComponent className="h-7 w-7" style={{ color: agent.color as any }} />
+                              <span className="text-sm font-medium leading-none">{agent.name}</span>
+                            </Button>
                           );
                         })}
-                      </SelectContent>
-                    </Select>
-                    <div className="text-sm text-muted-foreground">
-                      {selectedAgentId ? (
-                        <span className="flex items-center">
-                          <Bot className="h-4 w-4 mr-1" />
-                          Agente selecionado - {agents.find(a => a.id === selectedAgentId)?.name}
-                        </span>
-                      ) : (
-                        "Digite sua mensagem ou selecione um agente específico"
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Main Input Field */}
                   <div className="relative">
@@ -196,7 +219,7 @@ function ColaboradorContent() {
                         e.target.style.height = e.target.scrollHeight + 'px';
                       }}
                       onKeyDown={handleKeyDown}
-                      placeholder="Pergunte ao ControlIA para construir, corrigir bugs, explorar..."
+                      placeholder="Insira um comando para o ControlIA"
                       className="min-h-[120px] max-h-[300px] resize-none text-lg border-2 focus:border-primary/50"
                       disabled={isLoading}
                     />
@@ -216,76 +239,65 @@ function ColaboradorContent() {
                     </div>
                   </div>
 
-                  {/* Quick Access Buttons */}
-                  <div className="pt-4">
-                    <p className="text-sm text-muted-foreground mb-3">Tente estes exemplos para começar:</p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Button
-                        variant="outline"
-                        className="h-auto p-3 flex items-center space-x-2 justify-start hover:bg-accent"
-                        onClick={() => {
-                          setInput("Escreva documentação para o projeto");
-                          setTimeout(() => handleSend(), 100);
-                        }}
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span>Escrever documentação</span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="h-auto p-3 flex items-center space-x-2 justify-start hover:bg-accent"
-                        onClick={() => {
-                          setInput("Otimize a performance do código");
-                          setTimeout(() => handleSend(), 100);
-                        }}
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                        <span>Otimizar performance</span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="h-auto p-3 flex items-center space-x-2 justify-start hover:bg-accent"
-                        onClick={() => {
-                          setInput("Encontre e corrija 3 bugs");
-                          setTimeout(() => handleSend(), 100);
-                        }}
-                      >
-                        <Settings className="h-4 w-4" />
-                        <span>Encontrar e corrigir bugs</span>
-                      </Button>
+                  {/* Lista de agentes (em Card, abaixo do input) */}
+                  <Collapsible open={agentsOpen} onOpenChange={setAgentsOpen}>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-6 px-2">
+                          <ChevronDown className={`h-4 w-4 transition-transform ${agentsOpen ? '' : '-rotate-90'}`} />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <span className="text-sm text-muted-foreground">Escolha um Agente</span>
                     </div>
-                  </div>
-
-                  {/* Popular Agents Quick Access */}
-                  {popularAgents.length > 0 && (
-                    <div className="pt-6 border-t">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <Star className="h-4 w-4 text-yellow-500" />
-                        <span className="text-sm font-medium">Agentes Populares</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {popularAgents.map((agent) => {
-                          const IconComponent = agent.id === 'assistant' ? Brain :
-                                              agent.id === 'developer' ? Code :
-                                              agent.id === 'writer' ? FileText :
-                                              agent.id === 'analyst' ? Zap : Bot;
-                          
-                          return (
-                            <Button
-                              key={agent.id}
-                              variant="secondary"
-                              size="sm"
-                              className="h-8 flex items-center space-x-2"
-                              onClick={() => handleAgentSelect(agent.id)}
-                            >
-                              <IconComponent className={`h-3 w-3 ${agent.color}`} />
-                              <span className="text-xs">{agent.name}</span>
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                    <CollapsibleContent>
+                      <Card className="border-border">
+                        <CardHeader className="py-3">
+                          <CardTitle className="text-sm">Selecione um Agente</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0 pb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {agents.map((agent) => {
+                              const iconMap: Record<string, any> = {
+                                brain: Brain,
+                                code: Code,
+                                'file-text': FileText,
+                                zap: Zap,
+                                message: MessageSquare,
+                                cart: ShoppingCart,
+                                wrench: Wrench,
+                                chart: BarChart3,
+                                shield: Shield,
+                                rocket: Rocket,
+                                book: BookOpen,
+                                briefcase: Briefcase,
+                                cpu: Cpu,
+                                db: Database,
+                                globe: Globe,
+                                idea: Lightbulb,
+                                mic: Mic,
+                                pen: PenTool,
+                                settings: Settings,
+                                star: Star,
+                              };
+                              const IconComponent = iconMap[agent.icon as string] || Brain;
+                              const active = selectedAgentId === agent.id;
+                              return (
+                                <Button
+                                  key={agent.id}
+                                  variant={active ? 'default' : 'outline'}
+                                  className="justify-start h-10"
+                                  onClick={() => handleAgentSelect(agent.id)}
+                                >
+                                  <IconComponent className="h-4 w-4 mr-2" style={{ color: agent.color as any }} />
+                                  <span className="text-sm">{agent.name}</span>
+                                </Button>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               </div>
             </div>

@@ -45,28 +45,23 @@ export async function PATCH(
     const { id } = await params;
 
     const body = await req.json();
-    const { nome, descricao, instrucoes, icone_url, is_active, is_popular, cor } = body;
+    const { nome, descricao, instrucoes, icone, icone_url, is_active, is_popular, cor } = body;
 
-    // Validate required fields
-    if (!nome || !descricao || !instrucoes) {
-      return NextResponse.json(
-        { error: 'Nome, descrição e instruções são obrigatórios' },
-        { status: 400 }
-      );
-    }
+    // Build partial update payload (accept partial updates)
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (nome !== undefined) updateData.nome = nome;
+    if (descricao !== undefined) updateData.descricao = descricao;
+    if (instrucoes !== undefined) updateData.instrucoes = instrucoes;
+    if (cor !== undefined) updateData.cor = cor;
+    if (is_active !== undefined) updateData.is_active = is_active;
+    if (is_popular !== undefined) updateData.is_popular = is_popular;
+    // icon can come as 'icone' identifier or legacy 'icone_url'
+    if (icone !== undefined) updateData.icone_url = icone;
+    if (icone_url !== undefined) updateData.icone_url = icone_url;
 
     const { data: agente, error } = await supabase
       .from('agentes_ia')
-      .update({
-        nome,
-        descricao,
-        instrucoes,
-        icone_url: icone_url || null,
-        is_active: is_active ?? true,
-        is_popular: is_popular ?? false,
-        cor: cor || '#3B82F6',
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', id)
       .eq('empresa_id', profile.empresa_id)
       .select()

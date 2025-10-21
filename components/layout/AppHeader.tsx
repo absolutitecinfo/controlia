@@ -1,7 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { UserMenu } from "@/components/layout/UserMenu";
+const UserMenu = dynamic(() => import("@/components/layout/UserMenu").then(m => m.UserMenu), { ssr: false });
 
 export function AppHeader() {
   return (

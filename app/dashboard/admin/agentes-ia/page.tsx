@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Bot, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Bot, Plus, Edit, Trash2, Loader2, Brain, Code, FileText, Zap, MessageSquare, ShoppingCart, Wrench, BarChart3, Shield, Rocket, BookOpen, Briefcase, Cpu, Database, Globe, Lightbulb, Mic, PenTool, Settings, Star } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
 import { useAgentes, type Agent } from "@/hooks/use-agentes";
@@ -23,7 +23,7 @@ function AgentesIAContent() {
     nome: "",
     descricao: "",
     instrucoes: "",
-    icone_url: "",
+    icone: "brain",
     is_active: true,
     is_popular: false,
     cor: "#3B82F6"
@@ -38,7 +38,7 @@ function AgentesIAContent() {
         nome: agent.nome,
         descricao: agent.descricao,
         instrucoes: agent.instrucoes,
-        icone_url: agent.icone_url || "",
+        icone: (agent as any).icone_url || (agent as any).icone || "brain",
         is_active: agent.is_active,
         is_popular: agent.is_popular,
         cor: agent.cor || "#3B82F6"
@@ -49,7 +49,7 @@ function AgentesIAContent() {
         nome: "",
         descricao: "",
         instrucoes: "",
-        icone_url: "",
+        icone: "brain",
         is_active: true,
         is_popular: false,
         cor: "#3B82F6"
@@ -65,7 +65,7 @@ function AgentesIAContent() {
       nome: "",
       descricao: "",
       instrucoes: "",
-      icone_url: "",
+      icone: "brain",
       is_active: true,
       is_popular: false,
       cor: "#3B82F6"
@@ -78,9 +78,9 @@ function AgentesIAContent() {
 
     try {
       if (editingAgent) {
-        await updateAgent(editingAgent.id, formData);
+      await updateAgent(editingAgent.id, { ...formData, icone_url: formData.icone });
       } else {
-        await createAgent(formData);
+      await createAgent(formData);
       }
       handleCloseDialog();
     } catch (error) {
@@ -212,13 +212,46 @@ function AgentesIAContent() {
               </div>
 
               <div>
-                <Label htmlFor="icone_url">URL do Ícone (opcional)</Label>
-                <Input
-                  id="icone_url"
-                  value={formData.icone_url}
-                  onChange={(e) => setFormData({ ...formData, icone_url: e.target.value })}
-                  placeholder="https://exemplo.com/icone.png"
-                />
+                <Label>Ícone do Agente</Label>
+                <div className="grid grid-cols-5 gap-2 mt-2">
+                  {[
+                    { id: 'brain', icon: Brain },
+                    { id: 'code', icon: Code },
+                    { id: 'file-text', icon: FileText },
+                    { id: 'zap', icon: Zap },
+                    { id: 'message', icon: MessageSquare },
+                    { id: 'cart', icon: ShoppingCart },
+                    { id: 'wrench', icon: Wrench },
+                    { id: 'chart', icon: BarChart3 },
+                    { id: 'shield', icon: Shield },
+                    { id: 'rocket', icon: Rocket },
+                    { id: 'book', icon: BookOpen },
+                    { id: 'briefcase', icon: Briefcase },
+                    { id: 'cpu', icon: Cpu },
+                    { id: 'db', icon: Database },
+                    { id: 'globe', icon: Globe },
+                    { id: 'idea', icon: Lightbulb },
+                    { id: 'mic', icon: Mic },
+                    { id: 'pen', icon: PenTool },
+                    { id: 'settings', icon: Settings },
+                    { id: 'star', icon: Star },
+                  ].map(opt => {
+                    const Icon = opt.icon as any;
+                    const selected = formData.icone === opt.id;
+                    return (
+                      <Button
+                        key={opt.id}
+                        type="button"
+                        variant={selected ? 'default' : 'outline'}
+                        className="h-16 flex items-center justify-center"
+                        onClick={() => setFormData({ ...formData, icone: opt.id as any })}
+                        title={opt.id}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="flex items-center space-x-6">
@@ -297,22 +330,52 @@ function AgentesIAContent() {
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start space-x-3 flex-1 min-w-0">
-                  {agent.icone_url ? (
-                    <Image
-                      src={agent.icone_url}
-                      alt={agent.nome}
-                      width={40}
-                      height={40}
-                      className="rounded-full flex-shrink-0"
-                    />
-                  ) : (
-                    <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0"
-                      style={{ backgroundColor: agent.cor }}
-                    >
-                      <Bot className="h-5 w-5" />
-                    </div>
-                  )}
+                  {(() => {
+                    const iconId = (agent as any).icone || (agent as any).icone_url || '';
+                    const isUrl = typeof iconId === 'string' && (iconId.startsWith('http://') || iconId.startsWith('https://') || iconId.startsWith('/'));
+                    const iconMap: Record<string, any> = {
+                      brain: Brain,
+                      code: Code,
+                      'file-text': FileText,
+                      zap: Zap,
+                      message: MessageSquare,
+                      cart: ShoppingCart,
+                      wrench: Wrench,
+                      chart: BarChart3,
+                      shield: Shield,
+                      rocket: Rocket,
+                      book: BookOpen,
+                      briefcase: Briefcase,
+                      cpu: Cpu,
+                      db: Database,
+                      globe: Globe,
+                      idea: Lightbulb,
+                      mic: Mic,
+                      pen: PenTool,
+                      settings: Settings,
+                      star: Star,
+                    };
+                    if (isUrl) {
+                      return (
+                        <Image
+                          src={iconId}
+                          alt={agent.nome}
+                          width={40}
+                          height={40}
+                          className="rounded-full flex-shrink-0"
+                        />
+                      );
+                    }
+                    const Icon = iconMap[iconId] || Bot;
+                    return (
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0"
+                        style={{ backgroundColor: agent.cor }}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </div>
+                    );
+                  })()}
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-lg truncate">{agent.nome}</CardTitle>
                     <CardDescription className="text-sm line-clamp-2 break-words">

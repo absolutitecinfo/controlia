@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Settings, CreditCard, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,18 @@ import { toast } from "sonner";
 
 export function UserMenu() {
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const permissions = usePermissions();
+
+  // Evita mismatches de hidratação: renderiza somente após montar no cliente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   const handleLogout = async () => {
     console.log('🔄 Iniciando logout robusto...');

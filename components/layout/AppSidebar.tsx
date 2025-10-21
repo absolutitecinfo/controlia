@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import type React from "react";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -98,8 +99,8 @@ export function AppSidebar() {
 
   // Mostrar loading enquanto carrega as permissões
   if (permissions.loading) {
-    return (
-      <Sidebar collapsible="icon">
+  return (
+    <Sidebar collapsible="icon" style={isChatPage ? ({ ["--sidebar-width" as any]: "40rem" } as React.CSSProperties) : undefined}>
         <SidebarContent>
           <div className="p-4">
             <div className="h-8 w-8 rounded-lg bg-gray-200 animate-pulse" />
@@ -118,7 +119,14 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar
+      collapsible={isChatPage ? "none" : "icon"}
+      style={
+        isChatPage
+          ? ({ ["--sidebar-width" as any]: "24rem" } as React.CSSProperties)
+          : undefined
+      }
+    >
       <SidebarContent>
         <div className="p-4">
           {!isCollapsed && (

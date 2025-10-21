@@ -50,7 +50,7 @@ export function useChat() {
             id: agente.id,
             name: agente.nome,
             description: agente.descricao,
-            icon: null, // Será definido no componente
+            icon: agente.icone_url || agente.icone || 'brain',
             color: agente.cor || '#3B82F6',
             isPopular: agente.is_popular
           }));

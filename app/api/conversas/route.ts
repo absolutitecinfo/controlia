@@ -82,23 +82,35 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // Marcar conversa como inativa em vez de deletar
-    const { error } = await supabase
+    // 1) Tenta marcar como inativa (soft delete)
+    const { data: updatedRows, error: updateError } = await supabase
       .from('conversas')
       .update({ status: 'inativa' })
       .eq('conversation_uuid', conversationUuid)
       .eq('user_id', user.id)
-      .eq('empresa_id', profile.empresa_id);
+      .eq('empresa_id', profile.empresa_id)
+      .select('id');
 
-    if (error) {
-      console.error('Error deleting conversa:', error);
-      return NextResponse.json(
-        { error: 'Erro ao excluir conversa' },
-        { status: 500 }
-      );
+    // 2) Se houve erro no soft delete (ex.: RLS) OU nenhuma linha afetada, tenta hard delete como fallback
+    if (updateError || !updatedRows || updatedRows.length === 0) {
+      const { error: hardDeleteError } = await supabase
+        .from('conversas')
+        .delete()
+        .eq('conversation_uuid', conversationUuid)
+        .eq('empresa_id', profile.empresa_id);
+
+      if (hardDeleteError) {
+        console.error('Error hard-deleting conversa:', hardDeleteError);
+        return NextResponse.json(
+          { error: 'Erro ao excluir conversa' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true, hardDeleted: true });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, hardDeleted: false });
   } catch (error) {
     console.error('Conversas DELETE error:', error);
     return NextResponse.json(
