@@ -30,7 +30,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ uuid
         status,
         created_at,
         updated_at,
-        agentes_ia (
+        agente_id,
+        agentes_ia!inner (
           id,
           nome,
           descricao,
@@ -61,15 +62,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ uuid
     console.log('✅ Conversa encontrada:', conversa);
 
     // Formatar dados para o frontend
+    const agente = Array.isArray(conversa.agentes_ia) ? conversa.agentes_ia[0] : conversa.agentes_ia;
+    
     const formattedConversa = {
       id: conversa.id,
       uuid: conversa.conversation_uuid,
       titulo: conversa.titulo,
       agente: {
-        id: conversa.agentes_ia?.id,
-        nome: conversa.agentes_ia?.nome,
-        descricao: conversa.agentes_ia?.descricao,
-        cor: conversa.agentes_ia?.cor || '#3B82F6'
+        id: agente?.id || '',
+        nome: agente?.nome || '',
+        descricao: agente?.descricao || '',
+        cor: agente?.cor || '#3B82F6'
       },
       updated_at: conversa.updated_at,
       created_at: conversa.created_at

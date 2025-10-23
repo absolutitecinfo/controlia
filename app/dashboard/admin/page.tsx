@@ -334,7 +334,7 @@ function AdminContent() {
                           <p className="font-medium">{usuario.nome_completo}</p>
                           <p className="text-sm text-muted-foreground">{usuario.email}</p>
                           <p className="text-xs text-muted-foreground">
-                            Último acesso: {usuario.last_sign_in_at ? formatDate(usuario.last_sign_in_at) : 'Nunca'}
+                            Último acesso: {usuario.ultimo_acesso ? formatDate(usuario.ultimo_acesso) : 'Nunca'}
                           </p>
                         </div>
                       </div>
