@@ -100,7 +100,7 @@ export async function requireMaster() {
 }
 
 export async function requireUser() {
-  return requireRole(['colaborador', 'admin', 'master']);
+  return requireRole(['user', 'admin', 'master']);
 }
 
 // Helper function to create error response

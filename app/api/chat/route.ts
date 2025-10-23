@@ -107,6 +107,7 @@ export async function POST(req: NextRequest) {
     // 7. Get or create conversation
     let conversation;
     if (isNewConversation || !conversationUuid) {
+      console.log('🆕 Criando nova conversa...');
       // Create new conversation
       const { data: newConversation, error: createError } = await supabase
         .from('conversas')
@@ -122,13 +123,14 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (createError) {
-        console.error('Error creating conversation:', createError);
+        console.error('❌ Error creating conversation:', createError);
         return NextResponse.json(
           { error: 'Erro ao criar conversa' },
           { status: 500 }
         );
       }
 
+      console.log('✅ Nova conversa criada:', newConversation);
       conversation = newConversation;
     } else {
       // Get existing conversation
@@ -231,8 +233,16 @@ export async function POST(req: NextRequest) {
           // 12. Track usage
           await trackMessageUsage(profile.empresa_id, assistantContent.length);
 
-          // Send completion signal
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+          // Send completion signal with conversation info
+          const completionData = { 
+            done: true, 
+            conversationUuid: conversation.conversation_uuid,
+            isNewConversation: isNewConversation || !conversationUuid
+          };
+          console.log('📤 Enviando dados de conclusão:', completionData);
+          console.log('📤 Conversation UUID:', conversation.conversation_uuid);
+          console.log('📤 Is New Conversation:', isNewConversation || !conversationUuid);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(completionData)}\n\n`));
           controller.close();
 
         } catch (error) {

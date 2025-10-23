@@ -33,10 +33,18 @@ function LoginForm() {
     setLoading(true);
 
     try {
+      console.log('🔍 Iniciando login para:', email);
+      
       const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
+      });
+
+      console.log('📡 Resposta do Supabase Auth:', { 
+        hasUser: !!data.user, 
+        hasError: !!error,
+        errorMessage: error?.message 
       });
 
       if (error) {
@@ -47,72 +55,95 @@ function LoginForm() {
         throw new Error("Erro ao fazer login");
       }
 
-      // Buscar perfil do usuário
+      console.log('✅ Usuário autenticado:', data.user.id);
+
+      // Buscar perfil do usuário - versão simplificada para debug
+      console.log('🔍 Buscando perfil do usuário...');
+      
+      // Primeiro, buscar apenas o perfil básico
       const { data: profile, error: profileError } = await supabase
         .from('perfis')
-        .select(`
-          *,
-          empresas (
-            id,
-            nome,
-            status,
-            plano_id,
-            planos (
-              nome,
-              preco_mensal,
-              max_usuarios,
-              max_agentes,
-              limite_mensagens_mes
-            )
-          )
-        `)
+        .select('id, email, nome_completo, role, status, empresa_id')
         .eq('id', data.user.id)
         .single();
 
+      console.log('📡 Resposta do perfil básico:', { 
+        hasProfile: !!profile, 
+        hasError: !!profileError,
+        errorMessage: profileError?.message,
+        profileRole: profile?.role,
+        profileStatus: profile?.status
+      });
+
       if (profileError) {
-        console.error('Profile error:', profileError);
+        console.error('❌ Profile error:', profileError);
         toast.error("Erro ao carregar perfil do usuário");
         return;
       }
 
       if (!profile) {
+        console.error('❌ Perfil não encontrado para usuário:', data.user.id);
         toast.error("Perfil não encontrado");
         return;
       }
 
+      // Agora buscar informações da empresa separadamente
+      console.log('🔍 Buscando informações da empresa...');
+      const { data: empresa, error: empresaError } = await supabase
+        .from('empresas')
+        .select('id, nome, status')
+        .eq('id', profile.empresa_id)
+        .single();
+
+      console.log('📡 Resposta da empresa:', { 
+        hasEmpresa: !!empresa, 
+        hasError: !!empresaError,
+        errorMessage: empresaError?.message,
+        empresaStatus: empresa?.status
+      });
+
       // Verificar se usuário está ativo
       if (profile.status !== 'ativo') {
+        console.error('❌ Usuário não está ativo:', profile.status);
         await supabase.auth.signOut();
         toast.error("Sua conta está suspensa. Entre em contato com o suporte.");
         return;
       }
 
       // Verificar se empresa está ativa
-      if (profile.empresas?.status !== 'ativo') {
+      if (empresa && empresa.status !== 'ativo') {
+        console.error('❌ Empresa não está ativa:', empresa.status);
         await supabase.auth.signOut();
         toast.error("Sua empresa está suspensa. Entre em contato com o suporte.");
         return;
       }
 
-      // Redirecionar baseado no role
-      switch (profile.role) {
-        case 'master':
-          router.push('/dashboard/master');
-          break;
-        case 'admin':
-          router.push('/dashboard/admin');
-          break;
-        case 'user':
-          router.push('/dashboard/colaborador');
-          break;
-        default:
-          router.push('/dashboard');
-      }
+      console.log('✅ Perfil válido, redirecionando para role:', profile.role);
 
       toast.success("Login realizado com sucesso!");
 
+      // Usar window.location.href para redirecionamento completo
+      // Isso garante que a sessão seja mantida corretamente
+      let redirectUrl = '/dashboard';
+      switch (profile.role) {
+        case 'master':
+          redirectUrl = '/dashboard/master';
+          break;
+        case 'admin':
+          redirectUrl = '/dashboard/admin';
+          break;
+        case 'user':
+          redirectUrl = '/dashboard/colaborador';
+          break;
+      }
+      
+      // Aguardar um pouco para garantir que a sessão seja estabelecida
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      window.location.href = redirectUrl;
+
     } catch (error: unknown) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       

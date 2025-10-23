@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/authorization';
+import { requireAdmin, requireUser } from '@/lib/auth/authorization';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { checkAgentLimit } from '@/lib/limits/track-usage';
 
 export async function GET() {
   try {
-    const { profile } = await requireAdmin();
+    // Permitir que qualquer usuário autenticado visualize os agentes da empresa
+    const { profile } = await requireUser();
     const supabase = await createServerSupabaseClient();
 
     const { data: agentes, error } = await supabase

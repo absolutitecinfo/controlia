@@ -4,10 +4,28 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
+    console.log('🔍 /api/conversas - Iniciando...');
+    
     const { user, profile } = await requireUser();
+    console.log('✅ Usuário autenticado:', { 
+      userId: user.id, 
+      role: profile.role, 
+      empresaId: profile.empresa_id 
+    });
+    
     const supabase = await createServerSupabaseClient();
 
+    // Verificar se o usuário tem perfil válido
+    if (!profile.empresa_id) {
+      console.error('❌ Usuário sem empresa_id');
+      return NextResponse.json(
+        { error: 'Usuário não associado a uma empresa' },
+        { status: 403 }
+      );
+    }
+
     // Buscar conversas do usuário com informações do agente
+    console.log('🔍 Buscando conversas para user_id:', user.id, 'empresa_id:', profile.empresa_id);
     const { data: conversas, error } = await supabase
       .from('conversas')
       .select(`
@@ -31,12 +49,14 @@ export async function GET() {
       .limit(20);
 
     if (error) {
-      console.error('Error fetching conversas:', error);
+      console.error('❌ Error fetching conversas:', error);
       return NextResponse.json(
-        { error: 'Erro ao buscar conversas' },
+        { error: 'Erro ao buscar conversas', details: error.message },
         { status: 500 }
       );
     }
+
+    console.log('✅ Conversas encontradas:', conversas?.length || 0);
 
     // Formatar dados para o frontend
     const formattedConversas = conversas?.map(conversa => {
@@ -57,9 +77,10 @@ export async function GET() {
       };
     }) || [];
 
+    console.log('✅ Conversas formatadas:', formattedConversas.length);
     return NextResponse.json(formattedConversas);
   } catch (error) {
-    console.error('Conversas GET error:', error);
+    console.error('❌ Conversas GET error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
       { status: 401 }
@@ -82,35 +103,41 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // 1) Tenta marcar como inativa (soft delete)
-    const { data: updatedRows, error: updateError } = await supabase
+    console.log('🗑️ Excluindo conversa definitivamente:', conversationUuid);
+    console.log('👤 User ID:', user.id);
+    console.log('🏢 Empresa ID:', profile.empresa_id);
+
+    // Exclusão definitiva (hard delete)
+    const { data: deletedData, error: deleteError } = await supabase
       .from('conversas')
-      .update({ status: 'inativa' })
+      .delete()
       .eq('conversation_uuid', conversationUuid)
       .eq('user_id', user.id)
       .eq('empresa_id', profile.empresa_id)
       .select('id');
 
-    // 2) Se houve erro no soft delete (ex.: RLS) OU nenhuma linha afetada, tenta hard delete como fallback
-    if (updateError || !updatedRows || updatedRows.length === 0) {
-      const { error: hardDeleteError } = await supabase
-        .from('conversas')
-        .delete()
-        .eq('conversation_uuid', conversationUuid)
-        .eq('empresa_id', profile.empresa_id);
-
-      if (hardDeleteError) {
-        console.error('Error hard-deleting conversa:', hardDeleteError);
-        return NextResponse.json(
-          { error: 'Erro ao excluir conversa' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({ success: true, hardDeleted: true });
+    if (deleteError) {
+      console.error('❌ Error deleting conversa:', deleteError);
+      return NextResponse.json(
+        { error: 'Erro ao excluir conversa', details: deleteError.message },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ success: true, hardDeleted: false });
+    if (!deletedData || deletedData.length === 0) {
+      console.log('⚠️ Nenhuma conversa foi excluída - pode não existir ou não ter permissão');
+      return NextResponse.json(
+        { error: 'Conversa não encontrada ou sem permissão para excluir' },
+        { status: 404 }
+      );
+    }
+
+    console.log('✅ Conversa excluída definitivamente:', deletedData);
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Conversa excluída definitivamente',
+      deletedCount: deletedData.length
+    });
   } catch (error) {
     console.error('Conversas DELETE error:', error);
     return NextResponse.json(

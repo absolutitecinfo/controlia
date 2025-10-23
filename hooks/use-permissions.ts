@@ -30,21 +30,33 @@ export function usePermissions() {
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
+        console.log('🔍 usePermissions - Buscando permissões...');
+        
         // Buscar informações do usuário
         const response = await fetch('/api/auth/me');
         
+        console.log('📡 Response status:', response.status);
+        
         if (!response.ok) {
-          throw new Error('Erro ao buscar permissões');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ Erro na resposta:', errorData);
+          throw new Error(errorData.error || 'Erro ao buscar permissões');
         }
         
         const userData = await response.json();
+        console.log('✅ Dados do usuário recebidos:', { 
+          role: userData.role, 
+          email: userData.email,
+          empresaName: userData.empresaName 
+        });
+        
         const role = userData.role;
         const empresaName = userData.empresaName;
 
         // Definir permissões baseadas no papel
         const userPermissions: UserPermissions = {
-          canViewDashboard: ['admin', 'colaborador', 'master'].includes(role),
-          canViewChats: ['admin', 'colaborador', 'master'].includes(role),
+          canViewDashboard: ['admin', 'master'].includes(role), // Usuário comum não vê dashboard
+          canViewChats: ['admin', 'user', 'master'].includes(role),
           canManageAgents: ['admin', 'master'].includes(role),
           canManageCompany: ['admin', 'master'].includes(role),
           canAccessMaster: role === 'master',
@@ -55,10 +67,18 @@ export function usePermissions() {
           loading: false
         };
 
+        console.log('✅ Permissões definidas:', userPermissions);
         setPermissions(userPermissions);
       } catch (error) {
-        console.error('Erro ao buscar permissões:', error);
-        setPermissions(prev => ({ ...prev, loading: false }));
+        console.error('❌ Erro ao buscar permissões:', error);
+        setPermissions(prev => ({ 
+          ...prev, 
+          loading: false,
+          role: null,
+          empresaName: null,
+          userName: null,
+          userEmail: null
+        }));
       }
     };
 

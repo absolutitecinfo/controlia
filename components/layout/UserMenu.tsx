@@ -32,143 +32,52 @@ export function UserMenu() {
   }
 
   const handleLogout = async () => {
-    console.log('🔄 Iniciando logout robusto...');
+    console.log('🔄 Iniciando logout...');
     setIsLoading(true);
     
-    // Função para limpar dados locais de forma segura
-    const clearLocalData = () => {
-      try {
-        console.log('🧹 Limpando dados locais...');
-        
-        // Limpar localStorage
-        localStorage.clear();
-        
-        // Limpar sessionStorage
-        sessionStorage.clear();
-        
-        // Limpar cookies específicos do Supabase
-        const cookiesToClear = ['sb-access-token', 'sb-refresh-token', 'supabase-auth-token'];
-        cookiesToClear.forEach(cookieName => {
-          document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
-          document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-        });
-        
-        console.log('✅ Dados locais limpos com sucesso');
-        return true;
-      } catch (error) {
-        console.error('❌ Erro ao limpar dados locais:', error);
-        return false;
-      }
-    };
-    
-    // Função para logout no Supabase com retry
-    const performSupabaseLogout = async () => {
-      let attempts = 0;
-      const maxAttempts = 3;
-      
-      while (attempts < maxAttempts) {
-        attempts++;
-        console.log(`🔐 Tentativa ${attempts}/${maxAttempts} de logout no Supabase`);
-        
-        try {
-          const supabase = createClient();
-          const { error } = await supabase.auth.signOut();
-          
-          if (!error) {
-            console.log('✅ Logout no Supabase bem-sucedido');
-            return true;
-          }
-          
-          console.error(`❌ Erro no logout (tentativa ${attempts}):`, error);
-          
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        } catch (error) {
-          console.error(`❌ Exceção no logout (tentativa ${attempts}):`, error);
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        }
-      }
-      
-      console.log('⚠️ Logout no Supabase falhou após todas as tentativas');
-      return false;
-    };
-    
-    // Função para redirecionamento com múltiplas estratégias
-    const performRedirect = () => {
-      console.log('🚀 Iniciando redirecionamento...');
-      
-      const strategies = [
-        () => {
-          console.log('📱 Estratégia 1: window.location.href');
-          window.location.href = '/auth/login';
-        },
-        () => {
-          console.log('🔄 Estratégia 2: router.push');
-          router.push('/auth/login');
-        },
-        () => {
-          console.log('🔄 Estratégia 3: window.location.replace');
-          window.location.replace('/auth/login');
-        },
-        () => {
-          console.log('🔄 Estratégia 4: window.location.reload + redirect');
-          window.location.reload();
-        }
-      ];
-      
-      let strategyIndex = 0;
-      
-      const tryNextStrategy = () => {
-        if (strategyIndex < strategies.length) {
-          try {
-            strategies[strategyIndex]();
-          } catch (error) {
-            console.error(`❌ Estratégia ${strategyIndex + 1} falhou:`, error);
-            strategyIndex++;
-            setTimeout(tryNextStrategy, 500);
-          }
-        } else {
-          console.log('🆘 Todas as estratégias de redirecionamento falharam');
-          // Último recurso: criar um link e clicar
-          const link = document.createElement('a');
-          link.href = '/auth/login';
-          link.click();
-        }
-      };
-      
-      // Aguardar um pouco antes de tentar redirecionar
-      setTimeout(tryNextStrategy, 200);
-    };
-    
     try {
-      // 1. Limpar dados locais primeiro
-      clearLocalData();
-      
-      // 2. Tentar logout no Supabase
-      const supabaseSuccess = await performSupabaseLogout();
-      
-      // 3. Mostrar toast baseado no resultado
-      if (supabaseSuccess) {
-        toast.success('✅ Logout realizado com sucesso!');
-      } else {
-        toast.warning('⚠️ Logout com aviso, mas redirecionando...');
+      // 1. Chamar API de logout do servidor (limpa sessão server-side)
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+      } catch (apiError) {
+        console.error('Erro na API de logout (continuando):', apiError);
       }
       
-      // 4. Sempre tentar redirecionar
-      performRedirect();
+      // 2. Fazer logout no cliente
+      const supabase = createClient();
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      
+      if (error) {
+        console.error('Erro no logout do Supabase:', error);
+      }
+      
+      // 3. Limpar dados locais
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // 4. Mostrar feedback
+      toast.success('Logout realizado com sucesso!');
+      
+      // 5. Redirecionar usando window.location (hard redirect limpa tudo)
+      setTimeout(() => {
+        window.location.href = '/auth/login';
+      }, 100);
       
     } catch (error) {
-      console.error('❌ Erro geral no logout:', error);
-      toast.error('❌ Erro no logout, mas redirecionando...');
-      performRedirect();
-    } finally {
-      // Resetar loading após um tempo
+      console.error('Erro no processo de logout:', error);
+      
+      // Mesmo com erro, limpar dados locais e redirecionar
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      toast.error('Erro no logout, mas você será redirecionado...');
+      
       setTimeout(() => {
-        setIsLoading(false);
-      }, 2000);
+        window.location.href = '/auth/login';
+      }, 500);
     }
   };
 

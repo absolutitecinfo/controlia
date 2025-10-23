@@ -163,6 +163,28 @@ export function useChat() {
                   
                   if (data.done) {
                     // Streaming terminou
+                    console.log('🔄 Streaming terminou, dados:', data);
+                    if (data.conversationUuid && data.isNewConversation) {
+                      console.log('✅ Nova conversa criada:', data.conversationUuid);
+                      // Atualizar o UUID da conversa
+                      setConversationUuid(data.conversationUuid);
+                      
+                      // Atualizar a lista de conversas no sidebar
+                      if (addConversa) {
+                        console.log('🔍 Buscando informações da nova conversa específica...');
+                        // Buscar informações da conversa criada específica
+                        const response = await fetch(`/api/conversas/${data.conversationUuid}`);
+                        if (response.ok) {
+                          const novaConversa = await response.json();
+                          console.log('✅ Adicionando nova conversa à lista:', novaConversa);
+                          addConversa(novaConversa);
+                        } else {
+                          console.log('❌ Erro ao buscar conversa específica:', response.status);
+                        }
+                      } else {
+                        console.log('❌ Função addConversa não disponível');
+                      }
+                    }
                     break;
                   }
                 } catch (parseError) {
@@ -181,6 +203,27 @@ export function useChat() {
             ? { ...msg, content: data.response || data.content || '' }
             : msg
         ));
+        
+        // Verificar se é uma nova conversa
+        if (data.conversationUuid && data.isNewConversation) {
+          console.log('✅ Nova conversa criada (JSON):', data.conversationUuid);
+          setConversationUuid(data.conversationUuid);
+          
+          // Atualizar a lista de conversas no sidebar
+          if (addConversa) {
+            console.log('🔍 Buscando informações da nova conversa específica (JSON)...');
+            const response = await fetch(`/api/conversas/${data.conversationUuid}`);
+            if (response.ok) {
+              const novaConversa = await response.json();
+              console.log('✅ Adicionando nova conversa à lista (JSON):', novaConversa);
+              addConversa(novaConversa);
+            } else {
+              console.log('❌ Erro ao buscar conversa específica (JSON):', response.status);
+            }
+          } else {
+            console.log('❌ Função addConversa não disponível (JSON)');
+          }
+        }
       }
 
       // Marcar que a conversa começou

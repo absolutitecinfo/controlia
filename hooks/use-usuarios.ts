@@ -6,10 +6,10 @@ export interface Usuario {
   nome_completo: string;
   email: string;
   role: 'admin' | 'colaborador';
-  status: 'ativo' | 'inativo';
+  status: 'ativo' | 'inativo' | 'pendente';
   created_at: string;
   updated_at: string;
-  last_sign_in_at?: string;
+  ultimo_acesso?: string;
 }
 
 export interface CreateUsuarioData {

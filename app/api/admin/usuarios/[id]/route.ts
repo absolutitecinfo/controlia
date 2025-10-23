@@ -11,16 +11,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { data: usuario, error } = await supabase
       .from('perfis')
       .select(`
+        internal_id,
         id,
         nome_completo,
-        email:auth.users!inner(email),
+        email,
         role,
         status,
         created_at,
         updated_at,
-        last_sign_in_at
+        ultimo_acesso
       `)
-      .eq('id', id)
+      .eq('internal_id', id)
       .eq('empresa_id', profile.empresa_id)
       .single();
 
@@ -53,8 +54,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // Verificar se o usuário pertence à empresa
     const { data: existingUser } = await supabase
       .from('perfis')
-      .select('id')
-      .eq('id', id)
+      .select('internal_id')
+      .eq('internal_id', id)
       .eq('empresa_id', profile.empresa_id)
       .single();
 
@@ -75,17 +76,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { data: updatedUser, error } = await supabase
       .from('perfis')
       .update(updateData)
-      .eq('id', id)
+      .eq('internal_id', id)
       .eq('empresa_id', profile.empresa_id)
       .select(`
+        internal_id,
         id,
         nome_completo,
-        email:auth.users!inner(email),
+        email,
         role,
         status,
         created_at,
         updated_at,
-        last_sign_in_at
+        ultimo_acesso
       `)
       .single();
 
@@ -119,8 +121,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     // Verificar se o usuário pertence à empresa
     const { data: existingUser } = await supabase
       .from('perfis')
-      .select('id')
-      .eq('id', id)
+      .select('internal_id, id')
+      .eq('internal_id', id)
       .eq('empresa_id', profile.empresa_id)
       .single();
 
@@ -131,19 +133,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       );
     }
 
-    // Não permitir deletar a si mesmo
-    if (id === user.id) {
+    // Não permitir deletar a si mesmo (se tiver id do auth)
+    if (existingUser.id && existingUser.id === user.id) {
       return NextResponse.json(
         { error: 'Você não pode deletar sua própria conta' },
         { status: 400 }
       );
     }
 
-    // Deletar perfil (o usuário do auth será deletado via trigger)
+    // Deletar perfil
     const { error } = await supabase
       .from('perfis')
       .delete()
-      .eq('id', id)
+      .eq('internal_id', id)
       .eq('empresa_id', profile.empresa_id);
 
     if (error) {
@@ -154,8 +156,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       );
     }
 
-    // Deletar usuário do auth
-    await supabase.auth.admin.deleteUser(id);
+    // Se o usuário tinha um ID do auth, deletar também
+    if (existingUser.id) {
+      await supabase.auth.admin.deleteUser(existingUser.id);
+    }
 
     return NextResponse.json({
       message: 'Usuário deletado com sucesso'

@@ -7,21 +7,26 @@ export async function middleware(request: NextRequest) {
     '/',
     '/auth/login',
     '/auth/register',
+    '/auth/logout',
     '/pricing',
-    '/api/stripe/webhook'
+    '/api/stripe/webhook',
+    '/api/auth/logout'
   ];
 
   const protectedApiRoutes = [
     '/api/auth/me',
     '/api/master',
     '/api/admin/usuarios',
+    '/api/conversas',
+    '/api/agentes',
     '/api/stripe/sync-plans',
     '/api/stripe/checkout',
     '/api/stripe/portal',
     '/api/stripe/products',
     '/api/stripe/clear-ids',
     '/api/test-auth',
-    '/api/test-user'
+    '/api/test-user',
+    '/api/test-delete-conversa'
   ];
   
   const isPublicRoute = publicRoutes.some(route => 
@@ -30,7 +35,8 @@ export async function middleware(request: NextRequest) {
   );
 
   // API routes that don't need authentication
-  const isPublicApiRoute = request.nextUrl.pathname.startsWith('/api/test-');
+  const isPublicApiRoute = request.nextUrl.pathname.startsWith('/api/test-') || 
+                          request.nextUrl.pathname === '/api/test-session';
 
   const isProtectedApiRoute = protectedApiRoutes.some(route => 
     request.nextUrl.pathname === route
@@ -176,9 +182,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
+    // Dashboard route - only admin and master can access
+    if (request.nextUrl.pathname === '/dashboard' && !['admin', 'master'].includes(profile?.role || '')) {
+      return NextResponse.redirect(new URL('/dashboard/colaborador', request.url));
+    }
+
     // Admin-only routes (admin or master)
     if (request.nextUrl.pathname.startsWith('/dashboard/admin') && !['admin', 'master'].includes(profile?.role || '')) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/dashboard/colaborador', request.url));
     }
 
     // API route protection

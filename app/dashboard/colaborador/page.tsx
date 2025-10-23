@@ -317,14 +317,34 @@ function ColaboradorContent() {
             const agent = agents.find(a => a.id === selectedAgent);
             if (!agent) return null;
             
-            const IconComponent = agent.id === 'assistant' ? Brain :
-                                agent.id === 'developer' ? Code :
-                                agent.id === 'writer' ? FileText :
-                                agent.id === 'analyst' ? Zap : Bot;
+            // Usar o mapeamento de ícones configurado para o agente
+            const iconMap: Record<string, any> = {
+              brain: Brain,
+              code: Code,
+              'file-text': FileText,
+              zap: Zap,
+              message: MessageSquare,
+              cart: ShoppingCart,
+              wrench: Wrench,
+              chart: BarChart3,
+              shield: Shield,
+              rocket: Rocket,
+              book: BookOpen,
+              briefcase: Briefcase,
+              cpu: Cpu,
+              db: Database,
+              globe: Globe,
+              idea: Lightbulb,
+              mic: Mic,
+              pen: PenTool,
+              settings: Settings,
+              star: Star,
+            };
+            const IconComponent = iconMap[agent.icon as string] || Brain;
             
             return (
               <>
-                <IconComponent className={`h-6 w-6 ${agent.color}`} />
+                <IconComponent className="h-6 w-6" style={{ color: agent.color as any }} />
                 <div>
                   <h2 className="font-semibold">{agent.name}</h2>
                   <p className="text-sm text-muted-foreground">{agent.description}</p>
@@ -357,9 +377,46 @@ function ColaboradorContent() {
                       <User className="h-4 w-4 text-primary-foreground" />
                     </div>
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                      <Bot className="h-4 w-4" />
-                    </div>
+                    (() => {
+                      const agent = agents.find(a => a.id === selectedAgent);
+                      if (!agent) {
+                        return (
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                            <Bot className="h-4 w-4" />
+                          </div>
+                        );
+                      }
+                      
+                      const iconMap: Record<string, any> = {
+                        brain: Brain,
+                        code: Code,
+                        'file-text': FileText,
+                        zap: Zap,
+                        message: MessageSquare,
+                        cart: ShoppingCart,
+                        wrench: Wrench,
+                        chart: BarChart3,
+                        shield: Shield,
+                        rocket: Rocket,
+                        book: BookOpen,
+                        briefcase: Briefcase,
+                        cpu: Cpu,
+                        db: Database,
+                        globe: Globe,
+                        idea: Lightbulb,
+                        mic: Mic,
+                        pen: PenTool,
+                        settings: Settings,
+                        star: Star,
+                      };
+                      const IconComponent = iconMap[agent.icon as string] || Bot;
+                      
+                      return (
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                          <IconComponent className="h-4 w-4" style={{ color: agent.color as any }} />
+                        </div>
+                      );
+                    })()
                   )}
                 </div>
                 <div
@@ -400,9 +457,46 @@ function ColaboradorContent() {
           {isLoading && (
             <div className="flex justify-start">
               <div className="flex items-start space-x-2">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                  <Bot className="h-4 w-4" />
-                </div>
+                {(() => {
+                  const agent = agents.find(a => a.id === selectedAgent);
+                  if (!agent) {
+                    return (
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                        <Bot className="h-4 w-4" />
+                      </div>
+                    );
+                  }
+                  
+                  const iconMap: Record<string, any> = {
+                    brain: Brain,
+                    code: Code,
+                    'file-text': FileText,
+                    zap: Zap,
+                    message: MessageSquare,
+                    cart: ShoppingCart,
+                    wrench: Wrench,
+                    chart: BarChart3,
+                    shield: Shield,
+                    rocket: Rocket,
+                    book: BookOpen,
+                    briefcase: Briefcase,
+                    cpu: Cpu,
+                    db: Database,
+                    globe: Globe,
+                    idea: Lightbulb,
+                    mic: Mic,
+                    pen: PenTool,
+                    settings: Settings,
+                    star: Star,
+                  };
+                  const IconComponent = iconMap[agent.icon as string] || Bot;
+                  
+                  return (
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <IconComponent className="h-4 w-4" style={{ color: agent.color as any }} />
+                    </div>
+                  );
+                })()}
                 <div className="rounded-lg px-3 py-2 bg-muted">
                   <div className="flex items-center space-x-2">
                     <Loader2 className="h-4 w-4 animate-spin" />

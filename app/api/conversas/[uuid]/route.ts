@@ -2,16 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth/authorization';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ uuid: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ uuid: string }> }) {
   try {
-    const { uuid } = await params;
     const { user, profile } = await requireUser();
     const supabase = await createServerSupabaseClient();
+    
+    const { uuid } = await params;
 
-    // Buscar conversa específica com mensagens e informações do agente
+    if (!uuid) {
+      return NextResponse.json(
+        { error: 'UUID da conversa é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    console.log('🔍 Buscando conversa específica:', uuid);
+    console.log('👤 User ID:', user.id);
+    console.log('🏢 Empresa ID:', profile.empresa_id);
+
+    // Buscar conversa específica
     const { data: conversa, error } = await supabase
       .from('conversas')
       .select(`
@@ -19,10 +28,8 @@ export async function GET(
         conversation_uuid,
         titulo,
         status,
-        mensagens,
         created_at,
         updated_at,
-        agente_id,
         agentes_ia (
           id,
           nome,
@@ -33,30 +40,36 @@ export async function GET(
       .eq('conversation_uuid', uuid)
       .eq('user_id', user.id)
       .eq('empresa_id', profile.empresa_id)
+      .eq('status', 'ativa')
       .single();
 
-    if (error || !conversa) {
-      console.error('Error fetching conversa:', error);
+    if (error) {
+      console.error('❌ Error fetching conversa:', error);
       return NextResponse.json(
         { error: 'Conversa não encontrada' },
         { status: 404 }
       );
     }
 
+    if (!conversa) {
+      return NextResponse.json(
+        { error: 'Conversa não encontrada' },
+        { status: 404 }
+      );
+    }
+
+    console.log('✅ Conversa encontrada:', conversa);
+
     // Formatar dados para o frontend
-    const agente = Array.isArray(conversa.agentes_ia) ? conversa.agentes_ia[0] : conversa.agentes_ia;
-    
     const formattedConversa = {
       id: conversa.id,
       uuid: conversa.conversation_uuid,
       titulo: conversa.titulo,
-      mensagens: conversa.mensagens || [],
-      agente_id: conversa.agente_id,
       agente: {
-        id: agente?.id,
-        nome: agente?.nome,
-        descricao: agente?.descricao,
-        cor: agente?.cor || '#3B82F6'
+        id: conversa.agentes_ia?.id,
+        nome: conversa.agentes_ia?.nome,
+        descricao: conversa.agentes_ia?.descricao,
+        cor: conversa.agentes_ia?.cor || '#3B82F6'
       },
       updated_at: conversa.updated_at,
       created_at: conversa.created_at
@@ -64,10 +77,10 @@ export async function GET(
 
     return NextResponse.json(formattedConversa);
   } catch (error) {
-    console.error('Conversa GET error:', error);
+    console.error('❌ Conversa GET error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
-      { status: 401 }
+      { status: 500 }
     );
   }
 }
